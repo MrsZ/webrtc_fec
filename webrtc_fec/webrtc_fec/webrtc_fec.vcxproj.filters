@@ -1,0 +1,492 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="rtp_rtcp">
+      <UniqueIdentifier>{da18bdeb-f3ed-4fd2-ac06-1fb4b945e6a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rtp_rtcp\include">
+      <UniqueIdentifier>{203ed43c-7450-4add-9771-6e1f4fc6d4b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rtp_rtcp\source">
+      <UniqueIdentifier>{a1bfcbba-0178-4df2-9b46-2052280cf595}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rtp_rtcp\source\rtcp_packet">
+      <UniqueIdentifier>{260070e1-20c2-40ed-91ed-4b176e4b64f8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\flexfec_receiver.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\flexfec_sender.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\receive_statistics.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\remote_ntp_time_estimator.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\rtp_cvo.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\rtp_header_extension_map.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\rtp_header_parser.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\rtp_payload_registry.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\rtp_receiver.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\rtp_rtcp.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\rtp_rtcp_defines.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\include\ulpfec_receiver.h">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\byte_io.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\dtmf_queue.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\fec_private_tables_bursty.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\fec_private_tables_random.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\fec_test_helper.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\flexfec_header_reader_writer.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\forward_error_correction.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\forward_error_correction_internal.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\packet_loss_stats.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\playout_delay_oracle.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\receive_statistics_impl.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_nack_stats.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_receiver.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_sender.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_transceiver.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_transceiver_config.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_transceiver_impl.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_format.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_format_h264.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_format_video_generic.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_format_vp8.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_format_vp9.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_header_extensions.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_packet.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_packet_history.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_packet_received.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_packet_to_send.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_receiver_audio.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_receiver_impl.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_receiver_strategy.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_receiver_video.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_rtcp_config.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_rtcp_impl.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_sender.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_sender_audio.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_sender_video.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_utility.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\time_util.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\tmmbr_help.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\ulpfec_generator.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\ulpfec_header_reader_writer.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\ulpfec_receiver_impl.h">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\app.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\bye.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\common_header.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\compound_packet.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\dlrr.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\extended_jitter_report.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\extended_reports.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\fir.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\nack.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\pli.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\psfb.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\rapid_resync_request.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\receiver_report.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\remb.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\report_block.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\rrtr.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\rtpfb.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\sdes.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\sender_report.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\target_bitrate.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\tmmb_item.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\tmmbn.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\tmmbr.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\transport_feedback.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\voip_metric.h">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\include\rtp_rtcp_defines.cc">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\dtmf_queue.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\fec_private_tables_bursty.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\fec_private_tables_random.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\fec_test_helper.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\flexfec_header_reader_writer.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\flexfec_receiver.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\flexfec_sender.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\forward_error_correction.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\forward_error_correction_internal.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\packet_loss_stats.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\playout_delay_oracle.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\receive_statistics_impl.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\remote_ntp_time_estimator.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_nack_stats.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_receiver.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_sender.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_transceiver.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_transceiver_config.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_transceiver_impl.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_format.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_format_h264.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_format_video_generic.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_format_vp8.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_format_vp9.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_header_extension_map.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_header_extensions.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_header_parser.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_packet.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_packet_history.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_packet_received.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_packet_to_send.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_payload_registry.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_receiver_audio.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_receiver_impl.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_receiver_strategy.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_receiver_video.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_rtcp_impl.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_sender.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_sender_audio.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_sender_video.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtp_utility.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\time_util.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\tmmbr_help.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\ulpfec_generator.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\ulpfec_header_reader_writer.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\ulpfec_receiver_impl.cc">
+      <Filter>rtp_rtcp\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\app.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\bye.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\common_header.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\compound_packet.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\dlrr.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\extended_jitter_report.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\extended_reports.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\fir.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\nack.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\pli.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\psfb.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\rapid_resync_request.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\receiver_report.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\remb.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\report_block.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\rrtr.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\rtpfb.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\sdes.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\sender_report.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\target_bitrate.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\tmmb_item.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\tmmbn.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\tmmbr.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\transport_feedback.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\rtcp_packet\voip_metric.cc">
+      <Filter>rtp_rtcp\source\rtcp_packet</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
