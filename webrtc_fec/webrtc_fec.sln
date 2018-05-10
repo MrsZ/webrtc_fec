@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.27428.2037
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "webrtc_fec", "webrtc_fec\webrtc_fec.vcxproj", "{D2D41F22-A891-4CD9-BF49-601B3AE88471}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F54CD589-9760-49FA-BB82-867E6BB0F500} = {F54CD589-9760-49FA-BB82-867E6BB0F500}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test-flexfec-encoder", "test-flexfec-encoder\test-flexfec-encoder.vcxproj", "{9364BD79-9660-4DA5-AE42-2FE3372AC5FB}"
 EndProject
@@ -13,6 +16,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test-flexfec-decoder", "tes
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rtc_base", "rtc_base\rtc_base.vcxproj", "{F54CD589-9760-49FA-BB82-867E6BB0F500}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "system_wrappers", "system_wrappers\system_wrappers.vcxproj", "{AA512B36-2E00-4A49-8E68-53AAD6DBC510}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -54,6 +59,14 @@ Global
 		{F54CD589-9760-49FA-BB82-867E6BB0F500}.Release|x64.Build.0 = Release|x64
 		{F54CD589-9760-49FA-BB82-867E6BB0F500}.Release|x86.ActiveCfg = Release|Win32
 		{F54CD589-9760-49FA-BB82-867E6BB0F500}.Release|x86.Build.0 = Release|Win32
+		{AA512B36-2E00-4A49-8E68-53AAD6DBC510}.Debug|x64.ActiveCfg = Debug|x64
+		{AA512B36-2E00-4A49-8E68-53AAD6DBC510}.Debug|x64.Build.0 = Debug|x64
+		{AA512B36-2E00-4A49-8E68-53AAD6DBC510}.Debug|x86.ActiveCfg = Debug|Win32
+		{AA512B36-2E00-4A49-8E68-53AAD6DBC510}.Debug|x86.Build.0 = Debug|Win32
+		{AA512B36-2E00-4A49-8E68-53AAD6DBC510}.Release|x64.ActiveCfg = Release|x64
+		{AA512B36-2E00-4A49-8E68-53AAD6DBC510}.Release|x64.Build.0 = Release|x64
+		{AA512B36-2E00-4A49-8E68-53AAD6DBC510}.Release|x86.ActiveCfg = Release|Win32
+		{AA512B36-2E00-4A49-8E68-53AAD6DBC510}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

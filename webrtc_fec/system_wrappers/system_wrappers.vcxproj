@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{F54CD589-9760-49FA-BB82-867E6BB0F500}</ProjectGuid>
+    <ProjectGuid>{AA512B36-2E00-4A49-8E68-53AAD6DBC510}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>rtcbase</RootNamespace>
+    <RootNamespace>systemwrappers</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -148,13 +148,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\webrtc\src\rtc_base\checks.cc" />
-    <ClCompile Include="..\webrtc\src\rtc_base\sequenced_task_checker_impl.cc" />
+    <ClInclude Include="..\webrtc\src\system_wrappers\include\clock.h" />
+    <ClInclude Include="..\webrtc\src\system_wrappers\include\cpu_info.h" />
+    <ClInclude Include="..\webrtc\src\system_wrappers\include\event_wrapper.h" />
+    <ClInclude Include="..\webrtc\src\system_wrappers\include\ntp_time.h" />
+    <ClInclude Include="..\webrtc\src\system_wrappers\include\rtp_to_ntp_estimator.h" />
+    <ClInclude Include="..\webrtc\src\system_wrappers\include\sleep.h" />
+    <ClInclude Include="..\webrtc\src\system_wrappers\source\event_timer_win.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\webrtc\src\rtc_base\checks.h" />
-    <ClInclude Include="..\webrtc\src\rtc_base\sequenced_task_checker.h" />
-    <ClInclude Include="..\webrtc\src\rtc_base\sequenced_task_checker_impl.h" />
+    <ClCompile Include="..\webrtc\src\system_wrappers\source\clock.cc" />
+    <ClCompile Include="..\webrtc\src\system_wrappers\source\cpu_features.cc" />
+    <ClCompile Include="..\webrtc\src\system_wrappers\source\cpu_info.cc" />
+    <ClCompile Include="..\webrtc\src\system_wrappers\source\event.cc" />
+    <ClCompile Include="..\webrtc\src\system_wrappers\source\event_timer_win.cc" />
+    <ClCompile Include="..\webrtc\src\system_wrappers\source\rtp_to_ntp_estimator.cc" />
+    <ClCompile Include="..\webrtc\src\system_wrappers\source\sleep.cc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

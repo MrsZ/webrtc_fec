@@ -18,9 +18,18 @@
     <ClCompile Include="..\webrtc\src\rtc_base\checks.cc">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\webrtc\src\rtc_base\sequenced_task_checker_impl.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\webrtc\src\rtc_base\checks.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\rtc_base\sequenced_task_checker.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\rtc_base\sequenced_task_checker_impl.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
