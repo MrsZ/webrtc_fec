@@ -332,5 +332,8 @@
     <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\ulpfec_receiver_impl.cc">
       <Filter>rtp_rtcp\source</Filter>
     </ClCompile>
+    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\include\rtp_rtcp_defines.cc">
+      <Filter>rtp_rtcp\include</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

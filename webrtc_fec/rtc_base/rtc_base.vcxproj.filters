@@ -63,6 +63,9 @@
     <ClCompile Include="..\webrtc\src\rtc_base\synchronization\rw_lock_wrapper.cc">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\webrtc\src\rtc_base\random.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\webrtc\src\rtc_base\checks.h">
@@ -117,6 +120,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\webrtc\src\rtc_base\synchronization\rw_lock_wrapper.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\rtc_base\random.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
