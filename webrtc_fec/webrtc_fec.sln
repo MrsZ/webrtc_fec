@@ -8,6 +8,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test-flexfec-encoder", "test-flexfec-encoder\test-flexfec-encoder.vcxproj", "{9364BD79-9660-4DA5-AE42-2FE3372AC5FB}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test-flexfec-decoder", "test-flexfec-decoder\test-flexfec-decoder.vcxproj", "{10D71E6B-CF11-4457-8585-5936C4ADD2DF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D2D41F22-A891-4CD9-BF49-601B3AE88471} = {D2D41F22-A891-4CD9-BF49-601B3AE88471}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
