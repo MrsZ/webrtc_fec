@@ -89,7 +89,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_LIB;WEBRTC_WIN;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;WEBRTC_WIN;WIN32;NOMINMAX;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -149,12 +149,41 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\webrtc\src\rtc_base\checks.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\copyonwritebuffer.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\criticalsection.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\event.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\logging.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\platform_thread.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\platform_thread_types.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\sequenced_task_checker_impl.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\stringencode.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\strings\string_builder.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\synchronization\rw_lock_win.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\synchronization\rw_lock_wrapper.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\task_queue_win.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\thread_checker_impl.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\timeutils.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\zero_memory.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\webrtc\src\rtc_base\checks.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\copyonwritebuffer.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\criticalsection.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\event.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\logging.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\platform_thread.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\platform_thread_types.h" />
     <ClInclude Include="..\webrtc\src\rtc_base\sequenced_task_checker.h" />
     <ClInclude Include="..\webrtc\src\rtc_base\sequenced_task_checker_impl.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\stringencode.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\strings\string_builder.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\synchronization\rw_lock_win.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\synchronization\rw_lock_wrapper.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\task_queue.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\thread_checker.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\thread_checker_impl.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\timeutils.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\zero_memory.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
