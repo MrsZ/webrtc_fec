@@ -27,7 +27,7 @@ void testFlexfecDecoder()
 	const size_t kNumMediaPackets = 1;
 	const size_t kNumFecPackets = 1;
 	//PacketList media_packets;
-	//FlexfecReceiver *receiver_ = new FlexfecReceiver(0,0,nullptr);
+	FlexfecReceiver *receiver_ = new FlexfecReceiver(0,0,nullptr);
 }
 }
 int main()
