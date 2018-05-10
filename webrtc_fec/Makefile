@@ -23,16 +23,16 @@ OBJ = dtmf_queue.o fec_private_tables_bursty.o fec_private_tables_random.o flexf
       ulpfec_header_reader_writer.o ulpfec_receiver_impl.o
 
 CFLAGS = -std=c++11 
-
-OBJO:
+TARGET = libwebrtc_fec.a
+$(TARGET): $(SRCS)
 	$(CC) -c $(SRCS) -I$(INCLUDE_DIR)  $(CFLAGS) -DWEBRTC_POSIX
-	ar crsv libwebrtc_fec.a $(OBJ)
-	ranlib libwebrtc_fec.a
+	ar crsv $(TARGET) $(OBJ)
+	ranlib $(TARGET)
 
 .PHONY: clean
 
 clean:
-	rm *.o
+	rm *.o $(TARGET)
 
 
 
