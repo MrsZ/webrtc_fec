@@ -69,7 +69,7 @@ libevent.a: $(SRCS_RTC_LIBEVENT)
 .PHONY: clean test-flexfec-decoder test-flexfec-encoder 
 
 clean:
-	rm *.o $(TARGET)
+	rm *.o *.a
 
 test-flexfec-decoder:
 	$(CC) -o test-flexfec-decoder-1 test-flexfec-decoder/main.cpp -L./ -lwebrtc_fec -levent -I$(INCLUDE_DIR) $(CFLAGS) $(DEFINES)
