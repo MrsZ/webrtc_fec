@@ -72,8 +72,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>E:\codec\webrtc_fec\webrtc_fec\webrtc\src;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\codec\webrtc_fec\webrtc_fec\x64\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\webrtc\src;$(IncludePath)</IncludePath>
+    <LibraryPath>..\x64\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
