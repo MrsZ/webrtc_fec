@@ -20,8 +20,8 @@ class VideoBitrateAllocator {
   VideoBitrateAllocator() {}
   virtual ~VideoBitrateAllocator() {}
 
-  virtual VideoBitrateAllocation GetAllocation(uint32_t total_bitrate,
-                                               uint32_t framerate) = 0;
+  virtual BitrateAllocation GetAllocation(uint32_t total_bitrate,
+                                          uint32_t framerate) = 0;
   virtual uint32_t GetPreferredBitrateBps(uint32_t framerate) = 0;
 };
 
@@ -31,7 +31,7 @@ class VideoBitrateAllocationObserver {
   virtual ~VideoBitrateAllocationObserver() {}
 
   virtual void OnBitrateAllocationUpdated(
-      const VideoBitrateAllocation& allocation) = 0;
+      const BitrateAllocation& allocation) = 0;
 };
 
 }  // namespace webrtc

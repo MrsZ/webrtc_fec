@@ -23,16 +23,19 @@ namespace webrtc {
 
 class DefaultTemporalLayers : public TemporalLayers {
  public:
-  explicit DefaultTemporalLayers(int number_of_temporal_layers);
+  DefaultTemporalLayers(int number_of_temporal_layers,
+                        uint8_t initial_tl0_pic_idx);
   virtual ~DefaultTemporalLayers() {}
 
   // Returns the recommended VP8 encode flags needed. May refresh the decoder
   // and/or update the reference buffers.
   TemporalLayers::FrameConfig UpdateLayerConfig(uint32_t timestamp) override;
 
-  // New target bitrate, per temporal layer.
-  void OnRatesUpdated(const std::vector<uint32_t>& bitrates_bps,
-                      int framerate_fps) override;
+  // Update state based on new bitrate target and incoming framerate.
+  // Returns the bitrate allocation for the active temporal layers.
+  std::vector<uint32_t> OnRatesUpdated(int bitrate_kbps,
+                                       int max_bitrate_kbps,
+                                       int framerate) override;
 
   bool UpdateConfiguration(Vp8EncoderConfig* cfg) override;
 
@@ -43,21 +46,24 @@ class DefaultTemporalLayers : public TemporalLayers {
 
   void FrameEncoded(unsigned int size, int qp) override {}
 
+  uint8_t Tl0PicIdx() const override;
+
  private:
   const size_t num_layers_;
   const std::vector<unsigned int> temporal_ids_;
   const std::vector<bool> temporal_layer_sync_;
   const std::vector<TemporalLayers::FrameConfig> temporal_pattern_;
 
+  uint8_t tl0_pic_idx_;
   uint8_t pattern_idx_;
   bool last_base_layer_sync_;
-  // Updated cumulative bitrates, per temporal layer.
-  rtc::Optional<std::vector<uint32_t>> new_bitrates_bps_;
+  rtc::Optional<std::vector<uint32_t>> new_bitrates_kbps_;
 };
 
 class DefaultTemporalLayersChecker : public TemporalLayersChecker {
  public:
-  explicit DefaultTemporalLayersChecker(int number_of_temporal_layers);
+  DefaultTemporalLayersChecker(int number_of_temporal_layers,
+                               uint8_t initial_tl0_pic_idx);
   bool CheckTemporalConfig(
       bool frame_is_keyframe,
       const TemporalLayers::FrameConfig& frame_config) override;

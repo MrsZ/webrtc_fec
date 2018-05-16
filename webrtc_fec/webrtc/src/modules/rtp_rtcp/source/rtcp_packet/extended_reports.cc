@@ -18,7 +18,6 @@
 namespace webrtc {
 namespace rtcp {
 constexpr uint8_t ExtendedReports::kPacketType;
-constexpr size_t ExtendedReports::kMaxNumberOfDlrrItems;
 // From RFC 3611: RTP Control Protocol Extended Reports (RTCP XR).
 //
 // Format for XR packets:
@@ -105,13 +104,8 @@ void ExtendedReports::SetRrtr(const Rrtr& rrtr) {
   rrtr_block_.emplace(rrtr);
 }
 
-bool ExtendedReports::AddDlrrItem(const ReceiveTimeInfo& time_info) {
-  if (dlrr_block_.sub_blocks().size() >= kMaxNumberOfDlrrItems) {
-    RTC_LOG(LS_WARNING) << "Reached maximum number of DLRR items.";
-    return false;
-  }
+void ExtendedReports::AddDlrrItem(const ReceiveTimeInfo& time_info) {
   dlrr_block_.AddDlrrItem(time_info);
-  return true;
 }
 
 void ExtendedReports::SetVoipMetric(const VoipMetric& voip_metric) {

@@ -24,28 +24,23 @@ namespace rtc {
 // after changing the value.
 struct PacketTimeUpdateParams {
   PacketTimeUpdateParams();
-  PacketTimeUpdateParams(const PacketTimeUpdateParams& other);
   ~PacketTimeUpdateParams();
 
-  int rtp_sendtime_extension_id = -1;  // extension header id present in packet.
+  int rtp_sendtime_extension_id;    // extension header id present in packet.
   std::vector<char> srtp_auth_key;  // Authentication key.
-  int srtp_auth_tag_len = -1;       // Authentication tag length.
-  int64_t srtp_packet_index = -1;   // Required for Rtp Packet authentication.
+  int srtp_auth_tag_len;            // Authentication tag length.
+  int64_t srtp_packet_index;        // Required for Rtp Packet authentication.
 };
 
 // This structure holds meta information for the packet which is about to send
 // over network.
 struct PacketOptions {
-  PacketOptions();
-  explicit PacketOptions(DiffServCodePoint dscp);
-  PacketOptions(const PacketOptions& other);
-  ~PacketOptions();
+  PacketOptions() : dscp(DSCP_NO_CHANGE), packet_id(-1) {}
+  explicit PacketOptions(DiffServCodePoint dscp) : dscp(dscp), packet_id(-1) {}
 
-  DiffServCodePoint dscp = DSCP_NO_CHANGE;
-  int packet_id = -1;  // 16 bits, -1 represents "not set".
+  DiffServCodePoint dscp;
+  int packet_id;  // 16 bits, -1 represents "not set".
   PacketTimeUpdateParams packet_time_params;
-  // PacketInfo is passed to SentPacket when signaling this packet is sent.
-  PacketInfo info_signaled_after_sent;
 };
 
 // This structure will have the information about when packet is actually
@@ -142,11 +137,6 @@ class AsyncPacketSocket : public sigslot::has_slots<> {
  private:
   RTC_DISALLOW_COPY_AND_ASSIGN(AsyncPacketSocket);
 };
-
-void CopySocketInformationToPacketInfo(size_t packet_size_bytes,
-                                       const AsyncPacketSocket& socket_from,
-                                       bool is_connectionless,
-                                       rtc::PacketInfo* info);
 
 }  // namespace rtc
 

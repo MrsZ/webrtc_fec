@@ -15,7 +15,6 @@
 #include <iostream>
 #include <memory>
 
-#include "api/audio_codecs/builtin_audio_decoder_factory.h"
 #include "common_types.h"  // NOLINT(build/include)
 #include "modules/audio_coding/codecs/audio_format_conversion.h"
 #include "modules/audio_coding/include/audio_coding_module.h"
@@ -65,10 +64,8 @@ struct TestSettings {
 class DelayTest {
  public:
   DelayTest()
-      : acm_a_(AudioCodingModule::Create(
-            AudioCodingModule::Config(CreateBuiltinAudioDecoderFactory()))),
-        acm_b_(AudioCodingModule::Create(
-            AudioCodingModule::Config(CreateBuiltinAudioDecoderFactory()))),
+      : acm_a_(AudioCodingModule::Create()),
+        acm_b_(AudioCodingModule::Create()),
         channel_a2b_(new Channel),
         test_cntr_(0),
         encoding_sample_rate_hz_(8000) {}

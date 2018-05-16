@@ -576,13 +576,9 @@ bool RtpPacketizerVp9::NextPacket(RtpPacketToSend* packet) {
   if (!WriteHeaderAndPayload(packet_info, packet, packets_.empty())) {
     return false;
   }
-
-  // Ensure end_of_superframe is always set on top spatial layer when it is not
-  // dropped.
-  RTC_DCHECK(hdr_.spatial_idx < hdr_.num_spatial_layers - 1 ||
-             hdr_.end_of_superframe);
-
-  packet->SetMarker(packets_.empty() && hdr_.end_of_superframe);
+  packet->SetMarker(packets_.empty() &&
+                    (hdr_.spatial_idx == kNoSpatialIdx ||
+                     hdr_.spatial_idx == hdr_.num_spatial_layers - 1));
   return true;
 }
 
@@ -591,7 +587,7 @@ bool RtpPacketizerVp9::NextPacket(RtpPacketToSend* packet) {
 // Payload descriptor for F = 1 (flexible mode)
 //       0 1 2 3 4 5 6 7
 //      +-+-+-+-+-+-+-+-+
-//      |I|P|L|F|B|E|V|Z| (REQUIRED)
+//      |I|P|L|F|B|E|V|-| (REQUIRED)
 //      +-+-+-+-+-+-+-+-+
 // I:   |M| PICTURE ID  | (RECOMMENDED)
 //      +-+-+-+-+-+-+-+-+
@@ -608,7 +604,7 @@ bool RtpPacketizerVp9::NextPacket(RtpPacketToSend* packet) {
 // Payload descriptor for F = 0 (non-flexible mode)
 //       0 1 2 3 4 5 6 7
 //      +-+-+-+-+-+-+-+-+
-//      |I|P|L|F|B|E|V|Z| (REQUIRED)
+//      |I|P|L|F|B|E|V|-| (REQUIRED)
 //      +-+-+-+-+-+-+-+-+
 // I:   |M| PICTURE ID  | (RECOMMENDED)
 //      +-+-+-+-+-+-+-+-+
@@ -652,7 +648,6 @@ bool RtpPacketizerVp9::WriteHeader(const PacketInfo& packet_info,
   bool b_bit = packet_info.layer_begin;
   bool e_bit = packet_info.layer_end;
   bool v_bit = hdr_.ss_data_available && b_bit;
-  bool z_bit = hdr_.non_ref_for_inter_layer_pred;
 
   rtc::BitBufferWriter writer(buffer, max_payload_length_);
   RETURN_FALSE_ON_ERROR(writer.WriteBits(i_bit ? 1 : 0, 1));
@@ -662,7 +657,7 @@ bool RtpPacketizerVp9::WriteHeader(const PacketInfo& packet_info,
   RETURN_FALSE_ON_ERROR(writer.WriteBits(b_bit ? 1 : 0, 1));
   RETURN_FALSE_ON_ERROR(writer.WriteBits(e_bit ? 1 : 0, 1));
   RETURN_FALSE_ON_ERROR(writer.WriteBits(v_bit ? 1 : 0, 1));
-  RETURN_FALSE_ON_ERROR(writer.WriteBits(z_bit ? 1 : 0, 1));
+  RETURN_FALSE_ON_ERROR(writer.WriteBits(kReservedBitValue0, 1));
 
   // Add fields that are present.
   if (i_bit && !WritePictureId(hdr_, &writer)) {
@@ -702,7 +697,7 @@ bool RtpDepacketizerVp9::Parse(ParsedPayload* parsed_payload,
 
   // Parse mandatory first byte of payload descriptor.
   rtc::BitBuffer parser(payload, payload_length);
-  uint32_t i_bit, p_bit, l_bit, f_bit, b_bit, e_bit, v_bit, z_bit;
+  uint32_t i_bit, p_bit, l_bit, f_bit, b_bit, e_bit, v_bit;
   RETURN_FALSE_ON_ERROR(parser.ReadBits(&i_bit, 1));
   RETURN_FALSE_ON_ERROR(parser.ReadBits(&p_bit, 1));
   RETURN_FALSE_ON_ERROR(parser.ReadBits(&l_bit, 1));
@@ -710,7 +705,7 @@ bool RtpDepacketizerVp9::Parse(ParsedPayload* parsed_payload,
   RETURN_FALSE_ON_ERROR(parser.ReadBits(&b_bit, 1));
   RETURN_FALSE_ON_ERROR(parser.ReadBits(&e_bit, 1));
   RETURN_FALSE_ON_ERROR(parser.ReadBits(&v_bit, 1));
-  RETURN_FALSE_ON_ERROR(parser.ReadBits(&z_bit, 1));
+  RETURN_FALSE_ON_ERROR(parser.ConsumeBits(1));
 
   // Parsed payload.
   parsed_payload->type.Video.width = 0;
@@ -727,7 +722,6 @@ bool RtpDepacketizerVp9::Parse(ParsedPayload* parsed_payload,
   vp9->beginning_of_frame = b_bit ? true : false;
   vp9->end_of_frame = e_bit ? true : false;
   vp9->ss_data_available = v_bit ? true : false;
-  vp9->non_ref_for_inter_layer_pred = z_bit ? true : false;
 
   // Parse fields that are present.
   if (i_bit && !ParsePictureId(&parser, vp9)) {

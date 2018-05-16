@@ -505,8 +505,12 @@ bool IsStringASCII(StringPiece16 str) {
   return DoIsStringASCII(str.data(), str.length());
 }
 
+bool IsStringASCII(const string16& str) {
+  return DoIsStringASCII(str.data(), str.length());
+}
+
 #if defined(WCHAR_T_IS_UTF32)
-bool IsStringASCII(WStringPiece str) {
+bool IsStringASCII(const std::wstring& str) {
   return DoIsStringASCII(str.data(), str.length());
 }
 #endif

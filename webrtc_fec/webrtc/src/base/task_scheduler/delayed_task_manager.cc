@@ -14,8 +14,7 @@
 namespace base {
 namespace internal {
 
-DelayedTaskManager::DelayedTaskManager(
-    std::unique_ptr<const TickClock> tick_clock)
+DelayedTaskManager::DelayedTaskManager(std::unique_ptr<TickClock> tick_clock)
     : tick_clock_(std::move(tick_clock)) {
   DCHECK(tick_clock_);
 }

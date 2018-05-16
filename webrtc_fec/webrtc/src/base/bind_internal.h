@@ -163,7 +163,7 @@ template <typename T>
 using Unwrapper = BindUnwrapTraits<std::decay_t<T>>;
 
 template <typename T>
-decltype(auto) Unwrap(T&& o) {
+auto Unwrap(T&& o) -> decltype(Unwrapper<T>::Unwrap(std::forward<T>(o))) {
   return Unwrapper<T>::Unwrap(std::forward<T>(o));
 }
 
@@ -745,19 +745,13 @@ struct MakeBindStateTypeImpl<true, Functor> {
 
 template <typename Functor, typename Receiver, typename... BoundArgs>
 struct MakeBindStateTypeImpl<true, Functor, Receiver, BoundArgs...> {
- private:
-  using DecayedReceiver = std::decay_t<Receiver>;
-
   static_assert(!std::is_array<std::remove_reference_t<Receiver>>::value,
                 "First bound argument to a method cannot be an array.");
-  static_assert(
-      !std::is_pointer<DecayedReceiver>::value ||
-          IsRefCountedType<std::remove_pointer_t<DecayedReceiver>>::value,
-      "Receivers may not be raw pointers. If using a raw pointer here is safe"
-      " and has no lifetime concerns, use base::Unretained() and document why"
-      " it's safe.");
   static_assert(!HasRefCountedTypeAsRawPtr<std::decay_t<BoundArgs>...>::value,
                 "A parameter is a refcounted type and needs scoped_refptr.");
+
+ private:
+  using DecayedReceiver = std::decay_t<Receiver>;
 
  public:
   using Type = BindState<

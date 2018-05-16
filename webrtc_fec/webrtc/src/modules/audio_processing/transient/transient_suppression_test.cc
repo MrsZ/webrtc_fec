@@ -19,6 +19,7 @@
 
 #include "common_audio/include/audio_util.h"
 #include "modules/audio_processing/agc/agc.h"
+#include "modules/include/module_common_types.h"
 #include "rtc_base/flags.h"
 #include "test/gtest.h"
 #include "test/testsupport/fileutils.h"

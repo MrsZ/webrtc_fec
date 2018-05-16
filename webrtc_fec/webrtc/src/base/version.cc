@@ -91,8 +91,7 @@ Version::Version(const std::string& version_str) {
   components_.swap(parsed);
 }
 
-Version::Version(std::vector<uint32_t> components)
-    : components_(std::move(components)) {}
+Version::Version(std::vector<uint32_t> components) : components_(components) {}
 
 bool Version::IsValid() const {
   return (!components_.empty());

@@ -10,10 +10,10 @@
 #include "call/video_config.h"
 
 #include <algorithm>
+#include <sstream>
 #include <string>
 
 #include "rtc_base/checks.h"
-#include "rtc_base/strings/string_builder.h"
 
 namespace webrtc {
 VideoStream::VideoStream()
@@ -30,8 +30,7 @@ VideoStream::VideoStream(const VideoStream& other) = default;
 VideoStream::~VideoStream() = default;
 
 std::string VideoStream::ToString() const {
-  char buf[1024];
-  rtc::SimpleStringBuilder ss(buf);
+  std::stringstream ss;
   ss << "{width: " << width;
   ss << ", height: " << height;
   ss << ", max_framerate: " << max_framerate;
@@ -39,17 +38,22 @@ std::string VideoStream::ToString() const {
   ss << ", target_bitrate_bps:" << target_bitrate_bps;
   ss << ", max_bitrate_bps:" << max_bitrate_bps;
   ss << ", max_qp: " << max_qp;
-  ss << ", num_temporal_layers: " << num_temporal_layers.value_or(0);
-  ss << ", bitrate_priority: " << bitrate_priority.value_or(0);
   ss << ", active: " << active;
 
+  ss << ", temporal_layer_thresholds_bps: [";
+  for (size_t i = 0; i < temporal_layer_thresholds_bps.size(); ++i) {
+    ss << temporal_layer_thresholds_bps[i];
+    if (i != temporal_layer_thresholds_bps.size() - 1)
+      ss << ", ";
+  }
+  ss << ']';
+
+  ss << '}';
   return ss.str();
 }
 
 VideoEncoderConfig::VideoEncoderConfig()
-    : codec_type(kVideoCodecUnknown),
-      video_format("Unset"),
-      content_type(ContentType::kRealtimeVideo),
+    : content_type(ContentType::kRealtimeVideo),
       encoder_specific_settings(nullptr),
       min_transmit_bitrate_bps(0),
       max_bitrate_bps(0),
@@ -61,11 +65,8 @@ VideoEncoderConfig::VideoEncoderConfig(VideoEncoderConfig&&) = default;
 VideoEncoderConfig::~VideoEncoderConfig() = default;
 
 std::string VideoEncoderConfig::ToString() const {
-  char buf[1024];
-  rtc::SimpleStringBuilder ss(buf);
-  ss << "{codec_type: ";
-  ss << CodecTypeToPayloadString(codec_type);
-  ss << ", content_type: ";
+  std::stringstream ss;
+  ss << "{content_type: ";
   switch (content_type) {
     case ContentType::kRealtimeVideo:
       ss << "kRealtimeVideo";

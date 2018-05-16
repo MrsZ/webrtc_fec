@@ -62,6 +62,7 @@ constexpr size_t kNumTasksPostedPerThread = 150;
 // is allowed to cleanup.
 constexpr TimeDelta kReclaimTimeForCleanupTests =
     TimeDelta::FromMilliseconds(500);
+constexpr TimeDelta kExtraTimeToWaitForCleanup = TimeDelta::FromSeconds(1);
 
 class TaskSchedulerWorkerPoolImplTestBase {
  protected:
@@ -84,8 +85,8 @@ class TaskSchedulerWorkerPoolImplTestBase {
     service_thread_.Start();
     delayed_task_manager_.Start(service_thread_.task_runner());
     worker_pool_ = std::make_unique<SchedulerWorkerPoolImpl>(
-        "TestWorkerPool", "A", ThreadPriority::NORMAL,
-        task_tracker_.GetTrackedRef(), &delayed_task_manager_);
+        "TestWorkerPool", "A", ThreadPriority::NORMAL, &task_tracker_,
+        &delayed_task_manager_);
     ASSERT_TRUE(worker_pool_);
   }
 
@@ -104,10 +105,10 @@ class TaskSchedulerWorkerPoolImplTestBase {
     StartWorkerPool(suggested_reclaim_time, num_workers);
   }
 
-  Thread service_thread_;
-  TaskTracker task_tracker_ = {"Test"};
-
   std::unique_ptr<SchedulerWorkerPoolImpl> worker_pool_;
+
+  TaskTracker task_tracker_ = {"Test"};
+  Thread service_thread_;
 
  private:
   DelayedTaskManager delayed_task_manager_;
@@ -192,8 +193,7 @@ TEST_P(TaskSchedulerWorkerPoolImplTestParam, PostTasksWaitAllWorkersIdle) {
       threads_posting_tasks;
   for (size_t i = 0; i < kNumThreadsPostingTasks; ++i) {
     threads_posting_tasks.push_back(
-        std::make_unique<ThreadPostingTasksWaitIdle>(worker_pool_.get(),
-                                                     GetParam()));
+        MakeUnique<ThreadPostingTasksWaitIdle>(worker_pool_.get(), GetParam()));
     threads_posting_tasks.back()->Start();
   }
 
@@ -509,8 +509,11 @@ TEST_F(TaskSchedulerWorkerPoolCheckTlsReuse, CheckCleanupWorkers) {
   // All workers should be done running by now, so reset for the next phase.
   waiter_.Reset();
 
-  // Wait for the worker pool to clean up at least one worker.
-  worker_pool_->WaitForWorkersCleanedUpForTesting(1U);
+  // Give the worker pool a chance to cleanup its workers.
+  PlatformThread::Sleep(kReclaimTimeForCleanupTests +
+                        kExtraTimeToWaitForCleanup);
+
+  worker_pool_->DisallowWorkerCleanupForTesting();
 
   // Saturate and count the worker threads that do not have the magic TLS value.
   // If the value is not there, that means we're at a new worker.
@@ -548,37 +551,6 @@ class TaskSchedulerWorkerPoolHistogramTest
   // Override SetUp() to allow every test case to initialize a worker pool with
   // its own arguments.
   void SetUp() override {}
-
-  // Floods |worker_pool_| with a single task each that blocks until
-  // |continue_event| is signaled. Every worker in the pool is blocked on
-  // |continue_event| when this method returns. Note: this helper can easily be
-  // generalized to be useful in other tests, but it's here for now because it's
-  // only used in a TaskSchedulerWorkerPoolHistogramTest at the moment.
-  void FloodPool(WaitableEvent* continue_event) {
-    ASSERT_FALSE(continue_event->IsSignaled());
-
-    auto task_runner =
-        worker_pool_->CreateTaskRunnerWithTraits({WithBaseSyncPrimitives()});
-
-    const auto pool_capacity = worker_pool_->GetWorkerCapacityForTesting();
-
-    WaitableEvent workers_flooded(WaitableEvent::ResetPolicy::MANUAL,
-                                  WaitableEvent::InitialState::NOT_SIGNALED);
-    RepeatingClosure all_workers_running_barrier = BarrierClosure(
-        pool_capacity,
-        BindOnce(&WaitableEvent::Signal, Unretained(&workers_flooded)));
-    for (size_t i = 0; i < pool_capacity; ++i) {
-      task_runner->PostTask(
-          FROM_HERE,
-          BindOnce(
-              [](OnceClosure on_running, WaitableEvent* continue_event) {
-                std::move(on_running).Run();
-                continue_event->Wait();
-              },
-              all_workers_running_barrier, continue_event));
-    }
-    workers_flooded.Wait();
-  }
 
  private:
   std::unique_ptr<StatisticsRecorder> statistics_recorder_ =
@@ -623,6 +595,16 @@ TEST_F(TaskSchedulerWorkerPoolHistogramTest, NumTasksBetweenWaits) {
   EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(10));
 }
 
+namespace {
+
+void SignalAndWaitEvent(WaitableEvent* signal_event,
+                        WaitableEvent* wait_event) {
+  signal_event->Signal();
+  wait_event->Wait();
+}
+
+}  // namespace
+
 // Verifies that NumTasksBetweenWaits histogram is logged as expected across
 // idle and cleanup periods.
 TEST_F(TaskSchedulerWorkerPoolHistogramTest,
@@ -631,58 +613,70 @@ TEST_F(TaskSchedulerWorkerPoolHistogramTest,
                                      WaitableEvent::InitialState::NOT_SIGNALED);
   CreateAndStartWorkerPool(kReclaimTimeForCleanupTests,
                            kNumWorkersInWorkerPool);
+  auto task_runner =
+      worker_pool_->CreateTaskRunnerWithTraits({WithBaseSyncPrimitives()});
 
-  WaitableEvent workers_continue(WaitableEvent::ResetPolicy::MANUAL,
-                                 WaitableEvent::InitialState::NOT_SIGNALED);
+  // Post tasks to saturate the pool.
+  std::vector<std::unique_ptr<WaitableEvent>> task_started_events;
+  for (size_t i = 0; i < kNumWorkersInWorkerPool; ++i) {
+    task_started_events.push_back(std::make_unique<WaitableEvent>(
+        WaitableEvent::ResetPolicy::MANUAL,
+        WaitableEvent::InitialState::NOT_SIGNALED));
+    task_runner->PostTask(FROM_HERE,
+                          BindOnce(&SignalAndWaitEvent,
+                                   Unretained(task_started_events.back().get()),
+                                   Unretained(&tasks_can_exit_event)));
+  }
+  for (const auto& task_started_event : task_started_events)
+    task_started_event->Wait();
 
-  FloodPool(&workers_continue);
+  // Allow tasks to complete their execution and wait to allow workers to
+  // cleanup (at least one of them will not cleanup to keep the idle thread
+  // count above zero).
+  tasks_can_exit_event.Signal();
+  worker_pool_->WaitForAllWorkersIdleForTesting();
+  PlatformThread::Sleep(kReclaimTimeForCleanupTests +
+                        kExtraTimeToWaitForCleanup);
+
+  // Wake up SchedulerWorkers by posting tasks. They should record the
+  // TaskScheduler.NumTasksBetweenWaits.* histogram on wake up.
+  tasks_can_exit_event.Reset();
+  task_started_events.clear();
+  for (size_t i = 0; i < kNumWorkersInWorkerPool; ++i) {
+    task_started_events.push_back(std::make_unique<WaitableEvent>(
+        WaitableEvent::ResetPolicy::MANUAL,
+        WaitableEvent::InitialState::NOT_SIGNALED));
+    task_runner->PostTask(FROM_HERE,
+                          BindOnce(&SignalAndWaitEvent,
+                                   Unretained(task_started_events.back().get()),
+                                   Unretained(&tasks_can_exit_event)));
+  }
+  for (const auto& task_started_event : task_started_events)
+    task_started_event->Wait();
 
   const auto* histogram = worker_pool_->num_tasks_between_waits_histogram();
 
-  // NumTasksBetweenWaits shouldn't be logged until idle.
+  // Verify that counts were recorded to the histogram as expected.
+  // - The "0" bucket does not have a report because we do not report this
+  //   histogram when threads get no work twice in a row and cleanup (or go idle
+  //   if last on idle stack).
   EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(0));
-  EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(1));
+  // - The "1" bucket has a count of |kNumWorkersInWorkerPool| because each
+  //   SchedulerWorker ran a task before waiting on its WaitableEvent at the
+  //   beginning of the test (counted the same whether resurrecting post-cleanup
+  //   or waking from idle).
+  EXPECT_EQ(static_cast<int>(kNumWorkersInWorkerPool),
+            histogram->SnapshotSamples()->GetCount(1));
   EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(10));
 
-  // Make all workers go idle.
-  workers_continue.Signal();
+  tasks_can_exit_event.Signal();
   worker_pool_->WaitForAllWorkersIdleForTesting();
-
-  // All workers should have reported a single hit in the "1" bucket per the the
-  // histogram being reported when going idle and each worker having processed
-  // precisely 1 task per the controlled flooding logic above.
-  EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(0));
-  EXPECT_EQ(static_cast<int>(kNumWorkersInWorkerPool),
-            histogram->SnapshotSamples()->GetCount(1));
-  EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(10));
-
-  worker_pool_->WaitForWorkersCleanedUpForTesting(kNumWorkersInWorkerPool - 1);
-
-  EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(0));
-  EXPECT_EQ(static_cast<int>(kNumWorkersInWorkerPool),
-            histogram->SnapshotSamples()->GetCount(1));
-  EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(10));
-
-  // Flooding the pool once again (without letting any workers go idle)
-  // shouldn't affect the counts either.
-
-  workers_continue.Reset();
-  FloodPool(&workers_continue);
-
-  EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(0));
-  EXPECT_EQ(static_cast<int>(kNumWorkersInWorkerPool),
-            histogram->SnapshotSamples()->GetCount(1));
-  EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(10));
-
-  workers_continue.Signal();
-  worker_pool_->WaitForAllWorkersIdleForTesting();
+  worker_pool_->DisallowWorkerCleanupForTesting();
 }
 
 TEST_F(TaskSchedulerWorkerPoolHistogramTest, NumTasksBeforeCleanup) {
-  // Strictly use two workers for this test to avoid depending on the
-  // scheduler's logic to always keep one extra idle worker.
-  constexpr size_t kTwoWorkers = 2;
-  CreateAndStartWorkerPool(kReclaimTimeForCleanupTests, kTwoWorkers);
+  CreateAndStartWorkerPool(kReclaimTimeForCleanupTests,
+                           kNumWorkersInWorkerPool);
 
   auto histogrammed_thread_task_runner =
       worker_pool_->CreateSequencedTaskRunnerWithTraits(
@@ -760,18 +754,24 @@ TEST_F(TaskSchedulerWorkerPoolHistogramTest, NumTasksBeforeCleanup) {
                      thread_ref, Unretained(&top_idle_thread_running),
                      Unretained(&top_idle_thread_continue)));
   top_idle_thread_running.Wait();
-  EXPECT_EQ(0U, worker_pool_->NumberOfIdleWorkersForTesting());
   cleanup_thread_continue.Signal();
-  // Wait for the cleanup thread to also become idle.
-  worker_pool_->WaitForWorkersIdleForTesting(1U);
+  // Wait for the thread processing the |histogrammed_thread_task_runner| work
+  // to go to the idle stack.
+  PlatformThread::Sleep(TestTimeouts::tiny_timeout());
   top_idle_thread_continue.Signal();
   // Allow the thread processing the |histogrammed_thread_task_runner| work to
   // cleanup.
-  worker_pool_->WaitForWorkersCleanedUpForTesting(1U);
+  PlatformThread::Sleep(kReclaimTimeForCleanupTests +
+                        kReclaimTimeForCleanupTests);
+  worker_pool_->WaitForAllWorkersIdleForTesting();
+  worker_pool_->DisallowWorkerCleanupForTesting();
 
   // Verify that counts were recorded to the histogram as expected.
   const auto* histogram = worker_pool_->num_tasks_before_detach_histogram();
-  EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(0));
+  // Note: There'll be a thread that cleanups after running no tasks. This
+  // thread was the one created to maintain an idle thread after posting the
+  // task via |task_runner_for_top_idle|.
+  EXPECT_EQ(1, histogram->SnapshotSamples()->GetCount(0));
   EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(1));
   EXPECT_EQ(0, histogram->SnapshotSamples()->GetCount(2));
   EXPECT_EQ(1, histogram->SnapshotSamples()->GetCount(3));
@@ -788,8 +788,8 @@ TEST(TaskSchedulerWorkerPoolStandbyPolicyTest, InitOne) {
       MakeRefCounted<TestSimpleTaskRunner>();
   delayed_task_manager.Start(service_thread_task_runner);
   auto worker_pool = std::make_unique<SchedulerWorkerPoolImpl>(
-      "OnePolicyWorkerPool", "A", ThreadPriority::NORMAL,
-      task_tracker.GetTrackedRef(), &delayed_task_manager);
+      "OnePolicyWorkerPool", "A", ThreadPriority::NORMAL, &task_tracker,
+      &delayed_task_manager);
   worker_pool->Start(SchedulerWorkerPoolParams(8U, TimeDelta::Max()),
                      service_thread_task_runner,
                      SchedulerWorkerPoolImpl::WorkerEnvironment::NONE);
@@ -801,7 +801,7 @@ TEST(TaskSchedulerWorkerPoolStandbyPolicyTest, InitOne) {
 // Verify the SchedulerWorkerPoolImpl keeps at least one idle standby thread,
 // capacity permitting.
 TEST(TaskSchedulerWorkerPoolStandbyPolicyTest, VerifyStandbyThread) {
-  constexpr size_t kWorkerCapacity = 3;
+  constexpr size_t worker_capacity = 3;
 
   TaskTracker task_tracker("Test");
   DelayedTaskManager delayed_task_manager;
@@ -809,10 +809,10 @@ TEST(TaskSchedulerWorkerPoolStandbyPolicyTest, VerifyStandbyThread) {
       MakeRefCounted<TestSimpleTaskRunner>();
   delayed_task_manager.Start(service_thread_task_runner);
   auto worker_pool = std::make_unique<SchedulerWorkerPoolImpl>(
-      "StandbyThreadWorkerPool", "A", ThreadPriority::NORMAL,
-      task_tracker.GetTrackedRef(), &delayed_task_manager);
+      "StandbyThreadWorkerPool", "A", ThreadPriority::NORMAL, &task_tracker,
+      &delayed_task_manager);
   worker_pool->Start(
-      SchedulerWorkerPoolParams(kWorkerCapacity, kReclaimTimeForCleanupTests),
+      SchedulerWorkerPoolParams(worker_capacity, kReclaimTimeForCleanupTests),
       service_thread_task_runner,
       SchedulerWorkerPoolImpl::WorkerEnvironment::NONE);
   ASSERT_TRUE(worker_pool);
@@ -834,24 +834,23 @@ TEST(TaskSchedulerWorkerPoolStandbyPolicyTest, VerifyStandbyThread) {
       Unretained(&thread_running), Unretained(&thread_continue));
 
   // There should be one idle thread until we reach worker capacity
-  for (size_t i = 0; i < kWorkerCapacity; ++i) {
+  for (size_t i = 0; i < worker_capacity; ++i) {
     EXPECT_EQ(i + 1, worker_pool->NumberOfWorkersForTesting());
     task_runner->PostTask(FROM_HERE, closure);
     thread_running.Wait();
   }
 
   // There should not be an extra idle thread if it means going above capacity
-  EXPECT_EQ(kWorkerCapacity, worker_pool->NumberOfWorkersForTesting());
+  EXPECT_EQ(worker_capacity, worker_pool->NumberOfWorkersForTesting());
 
   thread_continue.Signal();
-  // Wait long enough for all but one worker to clean up.
-  worker_pool->WaitForWorkersCleanedUpForTesting(kWorkerCapacity - 1);
-  EXPECT_EQ(1U, worker_pool->NumberOfWorkersForTesting());
-  // Give extra time for a worker to cleanup : none should as the pool is
-  // expected to keep a worker ready regardless of how long it was idle for.
-  PlatformThread::Sleep(kReclaimTimeForCleanupTests);
+  // Give time for a worker to cleanup. Verify that the pool attempts to keep
+  // one idle active worker.
+  PlatformThread::Sleep(kReclaimTimeForCleanupTests +
+                        kExtraTimeToWaitForCleanup);
   EXPECT_EQ(1U, worker_pool->NumberOfWorkersForTesting());
 
+  worker_pool->DisallowWorkerCleanupForTesting();
   worker_pool->JoinForTesting();
 }
 
@@ -1331,9 +1330,9 @@ TEST(TaskSchedulerWorkerPoolOverWorkerCapacityTest, VerifyCleanup) {
   scoped_refptr<TaskRunner> service_thread_task_runner =
       MakeRefCounted<TestSimpleTaskRunner>();
   delayed_task_manager.Start(service_thread_task_runner);
-  SchedulerWorkerPoolImpl worker_pool(
-      "OverWorkerCapacityTestWorkerPool", "A", ThreadPriority::NORMAL,
-      task_tracker.GetTrackedRef(), &delayed_task_manager);
+  SchedulerWorkerPoolImpl worker_pool("OverWorkerCapacityTestWorkerPool", "A",
+                                      ThreadPriority::NORMAL, &task_tracker,
+                                      &delayed_task_manager);
   worker_pool.Start(
       SchedulerWorkerPoolParams(kWorkerCapacity, kReclaimTimeForCleanupTests),
       service_thread_task_runner,
@@ -1342,36 +1341,36 @@ TEST(TaskSchedulerWorkerPoolOverWorkerCapacityTest, VerifyCleanup) {
   scoped_refptr<TaskRunner> task_runner =
       worker_pool.CreateTaskRunnerWithTraits({WithBaseSyncPrimitives()});
 
-  WaitableEvent threads_running(WaitableEvent::ResetPolicy::AUTOMATIC,
+  WaitableEvent thread_running(WaitableEvent::ResetPolicy::AUTOMATIC,
+                               WaitableEvent::InitialState::NOT_SIGNALED);
+  WaitableEvent thread_continue(WaitableEvent::ResetPolicy::MANUAL,
                                 WaitableEvent::InitialState::NOT_SIGNALED);
-  WaitableEvent threads_continue(WaitableEvent::ResetPolicy::MANUAL,
-                                 WaitableEvent::InitialState::NOT_SIGNALED);
-  RepeatingClosure threads_running_barrier = BarrierClosure(
+  RepeatingClosure thread_running_barrier = BarrierClosure(
       kWorkerCapacity,
-      BindOnce(&WaitableEvent::Signal, Unretained(&threads_running)));
+      BindOnce(&WaitableEvent::Signal, Unretained(&thread_running)));
 
   WaitableEvent blocked_call_continue(
       WaitableEvent::ResetPolicy::MANUAL,
       WaitableEvent::InitialState::NOT_SIGNALED);
 
   RepeatingClosure closure = BindRepeating(
-      [](Closure* threads_running_barrier, WaitableEvent* threads_continue,
+      [](Closure* thread_running_barrier, WaitableEvent* thread_continue,
          WaitableEvent* blocked_call_continue) {
-        threads_running_barrier->Run();
+        thread_running_barrier->Run();
         {
           ScopedBlockingCall scoped_blocking_call(BlockingType::WILL_BLOCK);
           blocked_call_continue->Wait();
         }
-        threads_continue->Wait();
+        thread_continue->Wait();
 
       },
-      Unretained(&threads_running_barrier), Unretained(&threads_continue),
+      Unretained(&thread_running_barrier), Unretained(&thread_continue),
       Unretained(&blocked_call_continue));
 
   for (size_t i = 0; i < kWorkerCapacity; ++i)
     task_runner->PostTask(FROM_HERE, closure);
 
-  threads_running.Wait();
+  thread_running.Wait();
 
   WaitableEvent extra_threads_running(
       WaitableEvent::ResetPolicy::AUTOMATIC,
@@ -1402,20 +1401,25 @@ TEST(TaskSchedulerWorkerPoolOverWorkerCapacityTest, VerifyCleanup) {
   blocked_call_continue.Signal();
   extra_threads_continue.Signal();
 
-  // Periodically post tasks to ensure that posting tasks does not prevent
-  // workers that are idle due to the pool being over capacity from cleaning up.
-  for (int i = 0; i < 16; ++i) {
-    task_runner->PostDelayedTask(FROM_HERE, DoNothing(),
-                                 kReclaimTimeForCleanupTests * i * 0.5);
-  }
+  TimeTicks before_cleanup_start = TimeTicks::Now();
+  while (TimeTicks::Now() - before_cleanup_start <
+         kReclaimTimeForCleanupTests + kExtraTimeToWaitForCleanup) {
+    if (worker_pool.NumberOfWorkersForTesting() <= kWorkerCapacity + 1)
+      break;
 
+    // Periodically post tasks to ensure that posting tasks does not prevent
+    // workers that are idle due to the pool being over capacity from cleaning
+    // up.
+    task_runner->PostTask(FROM_HERE, DoNothing());
+    PlatformThread::Sleep(kReclaimTimeForCleanupTests / 2);
+  }
   // Note: one worker above capacity will not get cleaned up since it's on the
   // top of the idle stack.
-  worker_pool.WaitForWorkersCleanedUpForTesting(kWorkerCapacity - 1);
   EXPECT_EQ(kWorkerCapacity + 1, worker_pool.NumberOfWorkersForTesting());
 
-  threads_continue.Signal();
+  thread_continue.Signal();
 
+  worker_pool.DisallowWorkerCleanupForTesting();
   worker_pool.JoinForTesting();
 }
 
@@ -1551,9 +1555,9 @@ TEST(TaskSchedulerWorkerPoolTest, MAYBE_RacyCleanup) {
   scoped_refptr<TaskRunner> service_thread_task_runner =
       MakeRefCounted<TestSimpleTaskRunner>();
   delayed_task_manager.Start(service_thread_task_runner);
-  SchedulerWorkerPoolImpl worker_pool(
-      "RacyCleanupTestWorkerPool", "A", ThreadPriority::NORMAL,
-      task_tracker.GetTrackedRef(), &delayed_task_manager);
+  SchedulerWorkerPoolImpl worker_pool("RacyCleanupTestWorkerPool", "A",
+                                      ThreadPriority::NORMAL, &task_tracker,
+                                      &delayed_task_manager);
   worker_pool.Start(SchedulerWorkerPoolParams(kWorkerCapacity,
                                               kReclaimTimeForRacyCleanupTest),
                     service_thread_task_runner,
@@ -1589,6 +1593,7 @@ TEST(TaskSchedulerWorkerPoolTest, MAYBE_RacyCleanup) {
   // being idle.
   PlatformThread::Sleep(kReclaimTimeForRacyCleanupTest);
 
+  worker_pool.DisallowWorkerCleanupForTesting();
   worker_pool.JoinForTesting();
 
   // Unwinding this test will be racy if worker cleanup can race with

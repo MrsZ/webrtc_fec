@@ -16,7 +16,6 @@
 #include <string>
 #include <vector>
 
-#include "api/audio/audio_frame.h"
 #include "api/array_view.h"
 #include "api/optional.h"
 #include "common_audio/vad/include/webrtc_vad.h"
@@ -24,6 +23,7 @@
 #include "modules/audio_coding/acm2/call_statistics.h"
 #include "modules/audio_coding/include/audio_coding_module.h"
 #include "modules/audio_coding/neteq/include/neteq.h"
+#include "modules/include/module_common_types.h"
 #include "rtc_base/criticalsection.h"
 #include "rtc_base/thread_annotations.h"
 #include "typedefs.h"  // NOLINT(build/include)

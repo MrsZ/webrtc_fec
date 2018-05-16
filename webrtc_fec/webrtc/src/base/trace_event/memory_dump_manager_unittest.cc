@@ -16,7 +16,6 @@
 #include "base/command_line.h"
 #include "base/debug/thread_heap_usage_tracker.h"
 #include "base/macros.h"
-#include "base/memory/ptr_util.h"
 #include "base/run_loop.h"
 #include "base/single_thread_task_runner.h"
 #include "base/synchronization/waitable_event.h"
@@ -59,7 +58,12 @@ namespace {
 
 const char* kMDPName = "TestDumpProvider";
 const char* kWhitelistedMDPName = "WhitelistedTestDumpProvider";
-const char* const kTestMDPWhitelist[] = {kWhitelistedMDPName, nullptr};
+const char* kBackgroundButNotSummaryWhitelistedMDPName =
+    "BackgroundButNotSummaryWhitelistedTestDumpProvider";
+const char* const kTestMDPWhitelist[] = {
+    kWhitelistedMDPName, kBackgroundButNotSummaryWhitelistedMDPName, nullptr};
+const char* const kTestMDPWhitelistForSummary[] = {kWhitelistedMDPName,
+                                                   nullptr};
 
 void RegisterDumpProvider(
     MemoryDumpProvider* mdp,
@@ -747,17 +751,23 @@ TEST_F(MemoryDumpManagerTest, TriggerDumpWithoutTracing) {
                                         MemoryDumpLevelOfDetail::DETAILED));
 }
 
-TEST_F(MemoryDumpManagerTest, BackgroundWhitelisting) {
+TEST_F(MemoryDumpManagerTest, SummaryOnlyWhitelisting) {
+  // Summary only MDPs are a subset of background MDPs.
   SetDumpProviderWhitelistForTesting(kTestMDPWhitelist);
+  SetDumpProviderSummaryWhitelistForTesting(kTestMDPWhitelistForSummary);
 
   // Standard provider with default options (create dump for current process).
+  MockMemoryDumpProvider summaryMdp;
+  RegisterDumpProvider(&summaryMdp, nullptr, kDefaultOptions,
+                       kWhitelistedMDPName);
   MockMemoryDumpProvider backgroundMdp;
   RegisterDumpProvider(&backgroundMdp, nullptr, kDefaultOptions,
-                       kWhitelistedMDPName);
+                       kBackgroundButNotSummaryWhitelistedMDPName);
 
   EnableForTracing();
 
-  EXPECT_CALL(backgroundMdp, OnMemoryDump(_, _)).Times(1);
+  EXPECT_CALL(backgroundMdp, OnMemoryDump(_, _)).Times(0);
+  EXPECT_CALL(summaryMdp, OnMemoryDump(_, _)).Times(1);
   EXPECT_TRUE(RequestProcessDumpAndWait(MemoryDumpType::SUMMARY_ONLY,
                                         MemoryDumpLevelOfDetail::BACKGROUND));
   DisableTracing();
@@ -961,6 +971,54 @@ TEST_F(MemoryDumpManagerTestAsCoordinator, EnableHeapProfilingDisableDisabled) {
 }
 #endif  //  BUILDFLAG(USE_ALLOCATOR_SHIM) && !defined(OS_NACL)
 
+TEST_F(MemoryDumpManagerTest, EnableHeapProfilingIfNeeded) {
+  MockMemoryDumpProvider mdp1;
+  MemoryDumpProvider::Options supported_options;
+  supported_options.supports_heap_profiling = true;
+  RegisterDumpProvider(&mdp1, ThreadTaskRunnerHandle::Get(), supported_options);
+
+  // Should be noop.
+  mdm_->EnableHeapProfilingIfNeeded();
+  ASSERT_EQ(AllocationContextTracker::CaptureMode::DISABLED,
+            AllocationContextTracker::capture_mode());
+  mdm_->EnableHeapProfilingIfNeeded();
+  ASSERT_EQ(AllocationContextTracker::CaptureMode::DISABLED,
+            AllocationContextTracker::capture_mode());
+
+#if BUILDFLAG(USE_ALLOCATOR_SHIM) && !defined(OS_NACL)
+  testing::InSequence sequence;
+  EXPECT_CALL(mdp1, OnHeapProfilingEnabled(true)).Times(1);
+  EXPECT_CALL(mdp1, OnHeapProfilingEnabled(false)).Times(1);
+
+  CommandLine* cmdline = CommandLine::ForCurrentProcess();
+  cmdline->AppendSwitchASCII(switches::kEnableHeapProfiling, "");
+  mdm_->EnableHeapProfilingIfNeeded();
+  RunLoop().RunUntilIdle();
+  ASSERT_EQ(AllocationContextTracker::CaptureMode::PSEUDO_STACK,
+            AllocationContextTracker::capture_mode());
+  EXPECT_TRUE(mdm_->EnableHeapProfiling(kHeapProfilingModeDisabled));
+  RunLoop().RunUntilIdle();
+  ASSERT_EQ(AllocationContextTracker::CaptureMode::DISABLED,
+            AllocationContextTracker::capture_mode());
+  EXPECT_FALSE(mdm_->EnableHeapProfiling(kHeapProfilingModeBackground));
+  ASSERT_EQ(AllocationContextTracker::CaptureMode::DISABLED,
+            AllocationContextTracker::capture_mode());
+#endif  //  BUILDFLAG(USE_ALLOCATOR_SHIM) && !defined(OS_NACL)
+}
+
+TEST_F(MemoryDumpManagerTest, EnableHeapProfilingIfNeededUnsupported) {
+#if BUILDFLAG(USE_ALLOCATOR_SHIM) && !defined(OS_NACL)
+  ASSERT_EQ(mdm_->GetHeapProfilingMode(), kHeapProfilingModeDisabled);
+  CommandLine* cmdline = CommandLine::ForCurrentProcess();
+  cmdline->AppendSwitchASCII(switches::kEnableHeapProfiling, "unsupported");
+  mdm_->EnableHeapProfilingIfNeeded();
+  EXPECT_EQ(mdm_->GetHeapProfilingMode(), kHeapProfilingModeInvalid);
+#else
+  mdm_->EnableHeapProfilingIfNeeded();
+  EXPECT_EQ(mdm_->GetHeapProfilingMode(), kHeapProfilingModeInvalid);
+#endif  //  BUILDFLAG(USE_ALLOCATOR_SHIM) && !defined(OS_NACL)
+}
+
 // Mock MDP class that tests if the number of OnMemoryDump() calls are expected.
 // It is implemented without gmocks since EXPECT_CALL implementation is slow
 // when there are 1000s of instances, as required in
@@ -987,12 +1045,18 @@ class SimpleMockMemoryDumpProvider : public MemoryDumpProvider {
 
 TEST_F(MemoryDumpManagerTest, NoStackOverflowWithTooManyMDPs) {
   SetDumpProviderWhitelistForTesting(kTestMDPWhitelist);
+  SetDumpProviderSummaryWhitelistForTesting(kTestMDPWhitelistForSummary);
 
   int kMDPCount = 1000;
   std::vector<std::unique_ptr<SimpleMockMemoryDumpProvider>> mdps;
   for (int i = 0; i < kMDPCount; ++i) {
     mdps.push_back(std::make_unique<SimpleMockMemoryDumpProvider>(1));
     RegisterDumpProvider(mdps.back().get(), nullptr);
+  }
+  for (int i = 0; i < kMDPCount; ++i) {
+    mdps.push_back(std::make_unique<SimpleMockMemoryDumpProvider>(2));
+    RegisterDumpProvider(mdps.back().get(), nullptr, kDefaultOptions,
+                         kBackgroundButNotSummaryWhitelistedMDPName);
   }
   for (int i = 0; i < kMDPCount; ++i) {
     mdps.push_back(std::make_unique<SimpleMockMemoryDumpProvider>(3));

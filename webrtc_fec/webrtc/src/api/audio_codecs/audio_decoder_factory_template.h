@@ -22,22 +22,6 @@ namespace webrtc {
 
 namespace audio_decoder_factory_template_impl {
 
-template <typename T, typename ConfigT>
-class MakeAudioDecoderTakesTwoArgs {
- private:
-  template <typename U>
-  static auto Test(int) -> decltype(
-      U::MakeAudioDecoder(std::declval<ConfigT>(),
-                          std::declval<rtc::Optional<AudioCodecPairId>>()),
-      std::true_type());
-
-  template <typename U>
-  static std::false_type Test(...);
-
- public:
-  static constexpr bool value = decltype(Test<T>(0))::value;
-};
-
 template <typename... Ts>
 struct Helper;
 
@@ -47,8 +31,7 @@ struct Helper<> {
   static void AppendSupportedDecoders(std::vector<AudioCodecSpec>* specs) {}
   static bool IsSupportedDecoder(const SdpAudioFormat& format) { return false; }
   static std::unique_ptr<AudioDecoder> MakeAudioDecoder(
-      const SdpAudioFormat& format,
-      rtc::Optional<AudioCodecPairId> codec_pair_id) {
+      const SdpAudioFormat& format) {
     return nullptr;
   }
 };
@@ -70,28 +53,10 @@ struct Helper<T, Ts...> {
     return opt_config ? true : Helper<Ts...>::IsSupportedDecoder(format);
   }
   static std::unique_ptr<AudioDecoder> MakeAudioDecoder(
-      const SdpAudioFormat& format,
-      rtc::Optional<AudioCodecPairId> codec_pair_id) {
+      const SdpAudioFormat& format) {
     auto opt_config = T::SdpToConfig(format);
-    return opt_config ? CallMakeAudioDecoder(*opt_config, codec_pair_id)
-                      : Helper<Ts...>::MakeAudioDecoder(format, codec_pair_id);
-  }
-  template <
-      typename ConfigT,
-      typename std::enable_if<
-          !MakeAudioDecoderTakesTwoArgs<T, ConfigT>::value>::type* = nullptr>
-  static decltype(T::MakeAudioDecoder(std::declval<ConfigT>()))
-  CallMakeAudioDecoder(const ConfigT& config,
-                       rtc::Optional<AudioCodecPairId> codec_pair_id) {
-    return T::MakeAudioDecoder(config);
-  }
-  template <typename ConfigT>
-  static decltype(
-      T::MakeAudioDecoder(std::declval<ConfigT>(),
-                          std::declval<rtc::Optional<AudioCodecPairId>>()))
-  CallMakeAudioDecoder(const ConfigT& config,
-                       rtc::Optional<AudioCodecPairId> codec_pair_id) {
-    return T::MakeAudioDecoder(config, codec_pair_id);
+    return opt_config ? T::MakeAudioDecoder(*opt_config)
+                      : Helper<Ts...>::MakeAudioDecoder(format);
   }
 };
 
@@ -109,9 +74,8 @@ class AudioDecoderFactoryT : public AudioDecoderFactory {
   }
 
   std::unique_ptr<AudioDecoder> MakeAudioDecoder(
-      const SdpAudioFormat& format,
-      rtc::Optional<AudioCodecPairId> codec_pair_id) override {
-    return Helper<Ts...>::MakeAudioDecoder(format, codec_pair_id);
+      const SdpAudioFormat& format) override {
+    return Helper<Ts...>::MakeAudioDecoder(format);
   }
 };
 
@@ -134,10 +98,6 @@ class AudioDecoderFactoryT : public AudioDecoderFactory {
 //   // Creates an AudioDecoder for the specified format. Used to implement
 //   // AudioDecoderFactory::MakeAudioDecoder().
 //   std::unique_ptr<AudioDecoder> MakeAudioDecoder(const ConfigType& config);
-//   OR
-//   std::unique_ptr<AudioDecoder> MakeAudioDecoder(
-//       const ConfigType& config,
-//       rtc::Optional<AudioCodecPairId> codec_pair_id);
 //
 // ConfigType should be a type that encapsulates all the settings needed to
 // create an AudioDecoder. T::Config (where T is the decoder struct) should

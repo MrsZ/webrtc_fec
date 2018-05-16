@@ -15,6 +15,7 @@
 
 #include "api/audio_codecs/audio_encoder.h"
 #include "modules/audio_coding/neteq/tools/neteq_input.h"
+#include "modules/include/module_common_types.h"
 
 namespace webrtc {
 namespace test {

@@ -26,7 +26,6 @@
 #include "api/audio/echo_control.h"
 #include "api/optional.h"
 #include "modules/audio_processing/beamformer/array_util.h"
-#include "modules/audio_processing/include/audio_generator.h"
 #include "modules/audio_processing/include/audio_processing_statistics.h"
 #include "modules/audio_processing/include/config.h"
 #include "rtc_base/arraysize.h"
@@ -211,8 +210,8 @@ struct Intelligibility {
 // AudioProcessing* apm = AudioProcessingBuilder().Create();
 //
 // AudioProcessing::Config config;
+// config.level_controller.enabled = true;
 // config.high_pass_filter.enabled = true;
-// config.gain_controller2.enabled = true;
 // apm->ApplyConfig(config)
 //
 // apm->echo_cancellation()->enable_drift_compensation(false);
@@ -262,6 +261,14 @@ class AudioProcessing : public rtc::RefCountInterface {
   // by changing the default values in the AudioProcessing::Config struct.
   // The config is applied by passing the struct to the ApplyConfig method.
   struct Config {
+    struct LevelController {
+      bool enabled = false;
+
+      // Sets the initial peak level to use inside the level controller in order
+      // to compute the signal gain. The unit for the peak level is dBFS and
+      // the allowed range is [-100, 0].
+      float initial_peak_level_dbfs = -6.0206f;
+    } level_controller;
     struct ResidualEchoDetector {
       bool enabled = true;
     } residual_echo_detector;
@@ -270,20 +277,14 @@ class AudioProcessing : public rtc::RefCountInterface {
       bool enabled = false;
     } high_pass_filter;
 
-    // Enabled the pre-amplifier. It amplifies the capture signal
-    // before any other processing is done.
-    struct PreAmplifier {
-      bool enabled = false;
-      float fixed_gain_factor = 1.f;
-    } pre_amplifier;
-
-    // Enables the next generation AGC functionality. This feature
-    // replaces the standard methods of gain control in the previous
-    // AGC. This functionality is currently only partially
-    // implemented.
+    // Enables the next generation AGC functionality. This feature replaces the
+    // standard methods of gain control in the previous AGC.
+    // The functionality is not yet activated in the code and turning this on
+    // does not yet have the desired behavior.
     struct GainController2 {
       bool enabled = false;
       float fixed_gain_db = 0.f;
+      bool enable_limiter = true;
     } gain_controller2;
 
     // Explicit copy assignment implementation to avoid issues with memory
@@ -307,32 +308,6 @@ class AudioProcessing : public rtc::RefCountInterface {
     kMonoAndKeyboard,
     // Left, right, keyboard, and mic.
     kStereoAndKeyboard
-  };
-
-  // Specifies the properties of a setting to be passed to AudioProcessing at
-  // runtime.
-  class RuntimeSetting {
-   public:
-    enum class Type { kNotSpecified, kCapturePreGain };
-
-    RuntimeSetting() : type_(Type::kNotSpecified), value_(0.f) {}
-    ~RuntimeSetting() = default;
-
-    static RuntimeSetting CreateCapturePreGain(float gain) {
-      RTC_DCHECK_GE(gain, 1.f) << "Attenuation is not allowed.";
-      return {Type::kCapturePreGain, gain};
-    }
-
-    Type type() const { return type_; }
-    void GetFloat(float* value) const {
-      RTC_DCHECK(value);
-      *value = value_;
-    }
-
-   private:
-    RuntimeSetting(Type id, float value) : type_(id), value_(value) {}
-    Type type_;
-    float value_;
   };
 
   ~AudioProcessing() override {}
@@ -391,9 +366,6 @@ class AudioProcessing : public rtc::RefCountInterface {
   // but some components may change behavior based on this information.
   // Default false.
   virtual void set_output_will_be_muted(bool muted) = 0;
-
-  // Enqueue a runtime setting.
-  virtual void SetRuntimeSetting(RuntimeSetting setting) = 0;
 
   // Processes a 10 ms |frame| of the primary audio stream. On the client-side,
   // this is the near-end (or captured) audio.
@@ -507,16 +479,6 @@ class AudioProcessing : public rtc::RefCountInterface {
   // attached, it's destructor is called. The d-tor may block until
   // all pending logging tasks are completed.
   virtual void DetachAecDump() = 0;
-
-  // Attaches provided webrtc::AudioGenerator for modifying playout audio.
-  // Calling this method when another AudioGenerator is attached replaces the
-  // active AudioGenerator with a new one.
-  virtual void AttachPlayoutAudioGenerator(
-      std::unique_ptr<AudioGenerator> audio_generator) = 0;
-
-  // If no AudioGenerator is attached, this has no effect. If an AecDump is
-  // attached, its destructor is called.
-  virtual void DetachPlayoutAudioGenerator() = 0;
 
   // Use to send UMA histograms at end of a call. Note that all histogram
   // specific member variables are reset.
@@ -1127,10 +1089,7 @@ class CustomProcessing {
 class EchoDetector {
  public:
   // (Re-)Initializes the submodule.
-  virtual void Initialize(int capture_sample_rate_hz,
-                          int num_capture_channels,
-                          int render_sample_rate_hz,
-                          int num_render_channels) = 0;
+  virtual void Initialize(int sample_rate_hz, int num_channels) = 0;
 
   // Analysis (not changing) of the render signal.
   virtual void AnalyzeRenderAudio(rtc::ArrayView<const float> render_audio) = 0;
@@ -1203,7 +1162,6 @@ class VoiceDetection {
  protected:
   virtual ~VoiceDetection() {}
 };
-
 }  // namespace webrtc
 
 #endif  // MODULES_AUDIO_PROCESSING_INCLUDE_AUDIO_PROCESSING_H_

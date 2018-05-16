@@ -194,12 +194,6 @@
     <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\dtmf_queue.cc">
       <Filter>rtp_rtcp\source</Filter>
     </ClCompile>
-    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\fec_private_tables_bursty.cc">
-      <Filter>rtp_rtcp\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\fec_private_tables_random.cc">
-      <Filter>rtp_rtcp\source</Filter>
-    </ClCompile>
     <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\fec_test_helper.cc">
       <Filter>rtp_rtcp\source</Filter>
     </ClCompile>

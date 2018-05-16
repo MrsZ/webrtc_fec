@@ -38,7 +38,6 @@ namespace content {
 class BrowserGpuChannelHostFactory;
 class BrowserGpuMemoryBufferManager;
 class BrowserMainLoop;
-class BrowserProcessSubThread;
 class BrowserShutdownProfileDumper;
 class BrowserSurfaceViewManager;
 class BrowserTestBase;
@@ -80,7 +79,6 @@ namespace midi {
 class TaskService;  // https://crbug.com/796830
 }
 namespace mojo {
-class CoreLibraryInitializer;
 class SyncCallRestrictions;
 namespace edk {
 class ScopedIPCSupport;
@@ -93,7 +91,6 @@ namespace ui {
 class CommandBufferClientImpl;
 class CommandBufferLocal;
 class GpuState;
-class MaterialDesignController;
 }
 namespace net {
 class MultiThreadedCertVerifierScopedAllowBaseSyncPrimitives;
@@ -214,12 +211,9 @@ class BASE_EXPORT ScopedAllowBlocking {
   // in unit tests to avoid the friend requirement.
   FRIEND_TEST_ALL_PREFIXES(ThreadRestrictionsTest, ScopedAllowBlocking);
   friend class android_webview::ScopedAllowInitGLBindings;
-  friend class content::BrowserProcessSubThread;
   friend class cronet::CronetPrefsManager;
   friend class cronet::CronetURLRequestContext;
-  friend class mojo::CoreLibraryInitializer;
   friend class resource_coordinator::TabManagerDelegate;  // crbug.com/778703
-  friend class ui::MaterialDesignController;
   friend class ScopedAllowBlockingForTesting;
   friend class StackSamplingProfiler;
 
@@ -365,13 +359,11 @@ class BASE_EXPORT ThreadRestrictions {
   // DEPRECATED. Use ScopedAllowBlocking(ForTesting).
   class BASE_EXPORT ScopedAllowIO {
    public:
-    ScopedAllowIO() EMPTY_BODY_IF_DCHECK_IS_OFF;
-    ~ScopedAllowIO() EMPTY_BODY_IF_DCHECK_IS_OFF;
-
+    ScopedAllowIO() { previous_value_ = SetIOAllowed(true); }
+    ~ScopedAllowIO() { SetIOAllowed(previous_value_); }
    private:
-#if DCHECK_IS_ON()
-    const bool was_allowed_;
-#endif
+    // Whether IO is allowed when the ScopedAllowIO was constructed.
+    bool previous_value_;
 
     DISALLOW_COPY_AND_ASSIGN(ScopedAllowIO);
   };
@@ -478,13 +470,12 @@ class BASE_EXPORT ThreadRestrictions {
   // DEPRECATED. Use ScopedAllowBaseSyncPrimitives.
   class BASE_EXPORT ScopedAllowWait {
    public:
-    ScopedAllowWait() EMPTY_BODY_IF_DCHECK_IS_OFF;
-    ~ScopedAllowWait() EMPTY_BODY_IF_DCHECK_IS_OFF;
-
+    ScopedAllowWait() { previous_value_ = SetWaitAllowed(true); }
+    ~ScopedAllowWait() { SetWaitAllowed(previous_value_); }
    private:
-#if DCHECK_IS_ON()
-    const bool was_allowed_;
-#endif
+    // Whether singleton use is allowed when the ScopedAllowWait was
+    // constructed.
+    bool previous_value_;
 
     DISALLOW_COPY_AND_ASSIGN(ScopedAllowWait);
   };

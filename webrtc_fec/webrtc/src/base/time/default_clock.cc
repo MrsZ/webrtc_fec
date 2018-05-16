@@ -10,7 +10,7 @@ namespace base {
 
 DefaultClock::~DefaultClock() = default;
 
-Time DefaultClock::Now() const {
+Time DefaultClock::Now() {
   return Time::Now();
 }
 

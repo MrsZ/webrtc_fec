@@ -34,8 +34,7 @@ void RunTask(Task task) {
 class TaskSchedulerDelayedTaskManagerTest : public testing::Test {
  protected:
   TaskSchedulerDelayedTaskManagerTest()
-      : delayed_task_manager_(
-            service_thread_task_runner_->DeprecatedGetMockTickClock()),
+      : delayed_task_manager_(service_thread_task_runner_->GetMockTickClock()),
         task_(FROM_HERE,
               BindOnce(&MockTask::Run, Unretained(&mock_task_)),
               TaskTraits(),

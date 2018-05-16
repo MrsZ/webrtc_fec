@@ -30,14 +30,14 @@ class BASE_EXPORT SamplingHeapProfiler {
     Sample(const Sample&);
     ~Sample();
 
-    size_t size;   // Allocation size.
-    size_t total;  // Total size attributed to the sample.
+    size_t size;
+    size_t count;
     std::vector<void*> stack;
 
    private:
     friend class SamplingHeapProfiler;
 
-    Sample(size_t, size_t total, uint32_t ordinal);
+    Sample(size_t, size_t count, uint32_t ordinal);
 
     uint32_t ordinal;
   };
@@ -45,13 +45,9 @@ class BASE_EXPORT SamplingHeapProfiler {
   class SamplesObserver {
    public:
     virtual ~SamplesObserver() = default;
-    virtual void SampleAdded(uint32_t id, size_t size, size_t total) = 0;
+    virtual void SampleAdded(uint32_t id, size_t size, size_t count) = 0;
     virtual void SampleRemoved(uint32_t id) = 0;
   };
-
-  // Must be called early during the process initialization. It creates and
-  // reserves a TLS slot.
-  static void InitTLSSlot();
 
   // This is an entry point for plugging in an external allocator.
   // Profiler will invoke the provided callback upon initialization.
@@ -69,7 +65,7 @@ class BASE_EXPORT SamplingHeapProfiler {
   uint32_t Start();
   void Stop();
   void SetSamplingInterval(size_t sampling_interval);
-  void SuppressRandomnessForTest(bool suppress);
+  void SuppressRandomnessForTest();
 
   std::vector<Sample> GetSamples(uint32_t profile_id);
 
@@ -97,8 +93,6 @@ class BASE_EXPORT SamplingHeapProfiler {
   base::Lock mutex_;
   std::unordered_map<void*, Sample> samples_;
   std::vector<SamplesObserver*> observers_;
-
-  static SamplingHeapProfiler* instance_;
 
   friend class base::NoDestructor<SamplingHeapProfiler>;
 

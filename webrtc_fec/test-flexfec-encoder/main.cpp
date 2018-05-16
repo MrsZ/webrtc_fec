@@ -16,7 +16,7 @@ namespace webrtc {
 		void testFlexfecEncoder()
 		{
 			SimulatedClock clock(kInitialSimulatedClockTime);
-			webrtc::FlexfecSender sender(123, 5768, 1234, "",
+			webrtc::FlexfecSender sender(123, 5768, 1234,
 				kNoRtpHeaderExtensions, kNoRtpHeaderExtensionSizes,
 				nullptr /* rtp_state */, &clock);
 		}

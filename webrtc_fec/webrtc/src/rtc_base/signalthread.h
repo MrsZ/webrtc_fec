@@ -104,7 +104,9 @@ class SignalThread
 
   class Worker : public Thread {
    public:
-    explicit Worker(SignalThread* parent);
+    explicit Worker(SignalThread* parent)
+        : Thread(std::unique_ptr<SocketServer>(new NullSocketServer())),
+          parent_(parent) {}
     ~Worker() override;
     void Run() override;
     bool IsProcessingMessages() override;

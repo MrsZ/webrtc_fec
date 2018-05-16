@@ -60,9 +60,7 @@ SocketAddress AsyncUDPSocket::GetRemoteAddress() const {
 
 int AsyncUDPSocket::Send(const void *pv, size_t cb,
                          const rtc::PacketOptions& options) {
-  rtc::SentPacket sent_packet(options.packet_id, rtc::TimeMillis(),
-                              options.info_signaled_after_sent);
-  CopySocketInformationToPacketInfo(cb, *this, false, &sent_packet.info);
+  rtc::SentPacket sent_packet(options.packet_id, rtc::TimeMillis());
   int ret = socket_->Send(pv, cb);
   SignalSentPacket(this, sent_packet);
   return ret;
@@ -71,10 +69,7 @@ int AsyncUDPSocket::Send(const void *pv, size_t cb,
 int AsyncUDPSocket::SendTo(const void *pv, size_t cb,
                            const SocketAddress& addr,
                            const rtc::PacketOptions& options) {
-  rtc::SentPacket sent_packet(options.packet_id, rtc::TimeMillis(),
-                              options.info_signaled_after_sent);
-  CopySocketInformationToPacketInfo(cb, *this, true, &sent_packet.info);
-  sent_packet.info.remote_socket_address = addr;
+  rtc::SentPacket sent_packet(options.packet_id, rtc::TimeMillis());
   int ret = socket_->SendTo(pv, cb, addr);
   SignalSentPacket(this, sent_packet);
   return ret;

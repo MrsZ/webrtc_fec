@@ -15,7 +15,7 @@ bool TracingAgent::SupportsExplicitClockSync() {
 
 void TracingAgent::RecordClockSyncMarker(
     const std::string& sync_id,
-    RecordClockSyncMarkerCallback callback) {
+    const RecordClockSyncMarkerCallback& callback) {
   DCHECK(SupportsExplicitClockSync());
 }
 

@@ -131,6 +131,15 @@ class BASE_EXPORT MemoryDumpManager {
   void CreateProcessDump(const MemoryDumpRequestArgs& args,
                          const ProcessMemoryDumpCallback& callback);
 
+  // Returns the heap profiling mode configured on the command-line, if any.
+  // If heap profiling is configured but not supported by this binary, or if an
+  // invalid mode is specified, then kHeapProfilingInvalid is returned.
+  static HeapProfilingMode GetHeapProfilingModeFromCommandLine();
+
+  // Enable heap profiling if supported, and kEnableHeapProfiling command line
+  // is specified.
+  void EnableHeapProfilingIfNeeded();
+
   // Enable heap profiling with specified |profiling_mode|.
   // Use kHeapProfilingModeDisabled to disable, but it can't be re-enabled then.
   // Returns true if mode has been *changed* to the desired |profiling_mode|.
@@ -231,6 +240,7 @@ class BASE_EXPORT MemoryDumpManager {
   virtual ~MemoryDumpManager();
 
   static void SetInstanceForTesting(MemoryDumpManager* instance);
+  static uint32_t GetDumpsSumKb(const std::string&, const ProcessMemoryDump*);
 
   // Lazily initializes dump_thread_ and returns its TaskRunner.
   scoped_refptr<base::SequencedTaskRunner> GetOrCreateBgTaskRunnerLocked();
@@ -241,6 +251,10 @@ class BASE_EXPORT MemoryDumpManager {
   // at the end.
   void ContinueAsyncProcessDump(
       ProcessMemoryDumpAsyncState* owned_pmd_async_state);
+
+  // Returns true if the given dump type and mode allows the given MDP to dump.
+  bool IsDumpProviderAllowedToDump(const MemoryDumpRequestArgs& req_args,
+                                   const MemoryDumpProviderInfo& mdpinfo) const;
 
   // Invokes OnMemoryDump() of the given MDP. Should be called on the MDP task
   // runner.

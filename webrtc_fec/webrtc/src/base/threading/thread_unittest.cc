@@ -15,7 +15,6 @@
 #include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "base/message_loop/message_loop.h"
-#include "base/message_loop/message_loop_current.h"
 #include "base/run_loop.h"
 #include "base/single_thread_task_runner.h"
 #include "base/synchronization/waitable_event.h"
@@ -101,7 +100,7 @@ class CaptureToEventList : public Thread {
 // Observer that writes a value into |event_list| when a message loop has been
 // destroyed.
 class CapturingDestructionObserver
-    : public base::MessageLoopCurrent::DestructionObserver {
+    : public base::MessageLoop::DestructionObserver {
  public:
   // |event_list| must remain valid throughout the observer's lifetime.
   explicit CapturingDestructionObserver(EventList* event_list)
@@ -122,8 +121,8 @@ class CapturingDestructionObserver
 
 // Task that adds a destruction observer to the current message loop.
 void RegisterDestructionObserver(
-    base::MessageLoopCurrent::DestructionObserver* observer) {
-  base::MessageLoopCurrent::Get()->AddDestructionObserver(observer);
+    base::MessageLoop::DestructionObserver* observer) {
+  base::MessageLoop::current()->AddDestructionObserver(observer);
 }
 
 // Task that calls GetThreadId() of |thread|, stores the result into |id|, then
@@ -447,7 +446,7 @@ TEST_F(ThreadTest, SleepInsideInit) {
 //
 //  (1) Thread::CleanUp()
 //  (2) MessageLoop::~MessageLoop()
-//      MessageLoopCurrent::DestructionObservers called.
+//      MessageLoop::DestructionObservers called.
 TEST_F(ThreadTest, CleanUp) {
   EventList captured_events;
   CapturingDestructionObserver loop_destruction_observer(&captured_events);

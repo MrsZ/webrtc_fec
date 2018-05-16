@@ -209,8 +209,6 @@
   <ItemGroup>
     <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\include\rtp_rtcp_defines.cc" />
     <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\dtmf_queue.cc" />
-    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\fec_private_tables_bursty.cc" />
-    <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\fec_private_tables_random.cc" />
     <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\fec_test_helper.cc" />
     <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\flexfec_header_reader_writer.cc" />
     <ClCompile Include="..\webrtc\src\modules\rtp_rtcp\source\flexfec_receiver.cc" />

@@ -206,7 +206,7 @@ class TestVideoSenderWithMockEncoder : public TestVideoSender {
  protected:
   void SetUp() override {
     TestVideoSender::SetUp();
-    sender_->RegisterExternalEncoder(&encoder_, false);
+    sender_->RegisterExternalEncoder(&encoder_, kUnusedPayloadType, false);
     webrtc::test::CodecSettings(kVideoCodecVP8, &settings_);
     settings_.numberOfSimulcastStreams = kNumberOfStreams;
     ConfigureStream(kDefaultWidth / 4, kDefaultHeight / 4, 100,
@@ -306,7 +306,7 @@ TEST_F(TestVideoSenderWithMockEncoder, TestSetRate) {
   const uint32_t new_bitrate_kbps = settings_.startBitrate + 300;
 
   // Initial frame rate is taken from config, as we have no data yet.
-  VideoBitrateAllocation new_rate_allocation = rate_allocator_->GetAllocation(
+  BitrateAllocation new_rate_allocation = rate_allocator_->GetAllocation(
       new_bitrate_kbps * 1000, settings_.maxFramerate);
   EXPECT_CALL(encoder_,
               SetRateAllocation(new_rate_allocation, settings_.maxFramerate))
@@ -325,9 +325,9 @@ TEST_F(TestVideoSenderWithMockEncoder, TestSetRate) {
 
 TEST_F(TestVideoSenderWithMockEncoder, TestIntraRequestsInternalCapture) {
   // De-register current external encoder.
-  sender_->RegisterExternalEncoder(nullptr, false);
+  sender_->RegisterExternalEncoder(nullptr, kUnusedPayloadType, false);
   // Register encoder with internal capture.
-  sender_->RegisterExternalEncoder(&encoder_, true);
+  sender_->RegisterExternalEncoder(&encoder_, kUnusedPayloadType, true);
   EXPECT_EQ(0, sender_->RegisterSendCodec(&settings_, 1, 1200));
   // Initial request should be all keyframes.
   ExpectInitialKeyFrames();
@@ -344,14 +344,14 @@ TEST_F(TestVideoSenderWithMockEncoder, TestIntraRequestsInternalCapture) {
 
 TEST_F(TestVideoSenderWithMockEncoder, TestEncoderParametersForInternalSource) {
   // De-register current external encoder.
-  sender_->RegisterExternalEncoder(nullptr, false);
+  sender_->RegisterExternalEncoder(nullptr, kUnusedPayloadType, false);
   // Register encoder with internal capture.
-  sender_->RegisterExternalEncoder(&encoder_, true);
+  sender_->RegisterExternalEncoder(&encoder_, kUnusedPayloadType, true);
   EXPECT_EQ(0, sender_->RegisterSendCodec(&settings_, 1, 1200));
   // Update encoder bitrate parameters. We expect that to immediately call
   // SetRates on the encoder without waiting for AddFrame processing.
   const uint32_t new_bitrate_kbps = settings_.startBitrate + 300;
-  VideoBitrateAllocation new_rate_allocation = rate_allocator_->GetAllocation(
+  BitrateAllocation new_rate_allocation = rate_allocator_->GetAllocation(
       new_bitrate_kbps * 1000, settings_.maxFramerate);
   EXPECT_CALL(encoder_, SetRateAllocation(new_rate_allocation, _))
       .Times(1)
@@ -383,7 +383,7 @@ TEST_F(TestVideoSenderWithMockEncoder,
   // Call to SetChannelParameters with changed bitrate should call encoder
   // SetRates but not encoder SetChannelParameters (that are unchanged).
   uint32_t new_bitrate_bps = 2 * settings_.startBitrate * 1000;
-  VideoBitrateAllocation new_rate_allocation =
+  BitrateAllocation new_rate_allocation =
       rate_allocator_->GetAllocation(new_bitrate_bps, kInputFps);
   EXPECT_CALL(encoder_, SetRateAllocation(new_rate_allocation, kInputFps))
       .Times(1)
@@ -413,10 +413,13 @@ class TestVideoSenderWithVp8 : public TestVideoSender {
     codec_.startBitrate = codec_bitrate_kbps_;
     codec_.maxBitrate = codec_bitrate_kbps_;
 
-    rate_allocator_.reset(new SimulcastRateAllocator(codec_));
+    TemporalLayersFactory* tl_factory = new TemporalLayersFactory();
+    rate_allocator_.reset(new SimulcastRateAllocator(
+        codec_, std::unique_ptr<TemporalLayersFactory>(tl_factory)));
+    codec_.VP8()->tl_factory = tl_factory;
 
     encoder_ = VP8Encoder::Create();
-    sender_->RegisterExternalEncoder(encoder_.get(), false);
+    sender_->RegisterExternalEncoder(encoder_.get(), codec_.plType, false);
     EXPECT_EQ(0, sender_->RegisterSendCodec(&codec_, 1, 1200));
   }
 

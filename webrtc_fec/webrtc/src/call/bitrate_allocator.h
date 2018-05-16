@@ -43,58 +43,21 @@ class BitrateAllocatorObserver {
   virtual ~BitrateAllocatorObserver() {}
 };
 
-// Struct describing parameters for how a media stream should get bitrate
-// allocated to it. |min_bitrate_bps| = 0 equals no min bitrate.
-// |max_bitrate_bps| = 0 equals no max bitrate.
-// |enforce_min_bitrate| = 'true' will allocate at least |min_bitrate_bps| for
-//    this observer, even if the BWE is too low, 'false' will allocate 0 to
-//    the observer if BWE doesn't allow |min_bitrate_bps|.
-// |has_packet_feedback| indicates whether the data produced by the
-// corresponding media stream will receive per packet feedback. This is
-// tracked here to communicate to limit observers whether packet feedback can
-// be expected, which is true if any of the active observers has packet
-// feedback enabled. Note that |observer|->OnBitrateUpdated() will be called
-// within the scope of this method with the current rtt, fraction_loss and
-// available bitrate and that the bitrate in OnBitrateUpdated will be zero if
-// the |observer| is currently not allowed to send data.
-struct MediaStreamAllocationConfig {
-  uint32_t min_bitrate_bps;
-  uint32_t max_bitrate_bps;
-  uint32_t pad_up_bitrate_bps;
-  bool enforce_min_bitrate;
-  std::string track_id;
-  double bitrate_priority;
-  bool has_packet_feedback;
-};
-
-// Interface used for mocking
-class BitrateAllocatorInterface {
- public:
-  virtual void AddObserver(BitrateAllocatorObserver* observer,
-                           MediaStreamAllocationConfig config) = 0;
-  virtual void RemoveObserver(BitrateAllocatorObserver* observer) = 0;
-  virtual int GetStartBitrate(BitrateAllocatorObserver* observer) = 0;
-
- protected:
-  virtual ~BitrateAllocatorInterface() = default;
-};
-
 // Usage: this class will register multiple RtcpBitrateObserver's one at each
 // RTCP module. It will aggregate the results and run one bandwidth estimation
 // and push the result to the encoders via BitrateAllocatorObserver(s).
-class BitrateAllocator : public BitrateAllocatorInterface {
+class BitrateAllocator {
  public:
   // Used to get notified when send stream limits such as the minimum send
   // bitrate and max padding bitrate is changed.
   class LimitObserver {
    public:
-    virtual void OnAllocationLimitsChanged(uint32_t min_send_bitrate_bps,
-                                           uint32_t max_padding_bitrate_bps,
-                                           uint32_t total_bitrate_bps,
-                                           bool has_packet_feedback) = 0;
+    virtual void OnAllocationLimitsChanged(
+        uint32_t min_send_bitrate_bps,
+        uint32_t max_padding_bitrate_bps) = 0;
 
    protected:
-    virtual ~LimitObserver() = default;
+    virtual ~LimitObserver() {}
   };
 
   explicit BitrateAllocator(LimitObserver* limit_observer);
@@ -106,19 +69,33 @@ class BitrateAllocator : public BitrateAllocatorInterface {
                         int64_t rtt,
                         int64_t bwe_period_ms);
 
-  // Set the configuration used by the bandwidth management.
+  // Set the start and max send bitrate used by the bandwidth management.
+  //
   // |observer| updates bitrates if already in use.
-  // |config| is the configuration to use for allocation.
+  // |min_bitrate_bps| = 0 equals no min bitrate.
+  // |max_bitrate_bps| = 0 equals no max bitrate.
+  // |enforce_min_bitrate| = 'true' will allocate at least |min_bitrate_bps| for
+  //    this observer, even if the BWE is too low, 'false' will allocate 0 to
+  //    the observer if BWE doesn't allow |min_bitrate_bps|.
+  // Note that |observer|->OnBitrateUpdated() will be called within the scope of
+  // this method with the current rtt, fraction_loss and available bitrate and
+  // that the bitrate in OnBitrateUpdated will be zero if the |observer| is
+  // currently not allowed to send data.
   void AddObserver(BitrateAllocatorObserver* observer,
-                   MediaStreamAllocationConfig config) override;
+                   uint32_t min_bitrate_bps,
+                   uint32_t max_bitrate_bps,
+                   uint32_t pad_up_bitrate_bps,
+                   bool enforce_min_bitrate,
+                   std::string track_id,
+                   double bitrate_priority);
 
   // Removes a previously added observer, but will not trigger a new bitrate
   // allocation.
-  void RemoveObserver(BitrateAllocatorObserver* observer) override;
+  void RemoveObserver(BitrateAllocatorObserver* observer);
 
   // Returns initial bitrate allocated for |observer|. If |observer| is not in
   // the list of added observers, a best guess is returned.
-  int GetStartBitrate(BitrateAllocatorObserver* observer) override;
+  int GetStartBitrate(BitrateAllocatorObserver* observer);
 
   // Sets external allocation strategy. If strategy is not set default WebRTC
   // allocation mechanism will be used. The strategy may be changed during call.
@@ -135,8 +112,7 @@ class BitrateAllocator : public BitrateAllocatorInterface {
                    uint32_t pad_up_bitrate_bps,
                    bool enforce_min_bitrate,
                    std::string track_id,
-                   double bitrate_priority,
-                   bool has_packet_feedback)
+                   double bitrate_priority)
         : TrackConfig(min_bitrate_bps,
                       max_bitrate_bps,
                       enforce_min_bitrate,
@@ -145,8 +121,7 @@ class BitrateAllocator : public BitrateAllocatorInterface {
           pad_up_bitrate_bps(pad_up_bitrate_bps),
           allocated_bitrate_bps(-1),
           media_ratio(1.0),
-          bitrate_priority(bitrate_priority),
-          has_packet_feedback(has_packet_feedback) {}
+          bitrate_priority(bitrate_priority) {}
 
     BitrateAllocatorObserver* observer;
     uint32_t pad_up_bitrate_bps;
@@ -156,7 +131,6 @@ class BitrateAllocator : public BitrateAllocatorInterface {
     // observers. If an observer has twice the bitrate_priority of other
     // observers, it should be allocated twice the bitrate above its min.
     double bitrate_priority;
-    bool has_packet_feedback;
 
     uint32_t LastAllocatedBitrate() const;
     // The minimum bitrate required by this observer, including
@@ -214,13 +188,6 @@ class BitrateAllocator : public BitrateAllocatorInterface {
       const ObserverAllocation& observers_capacities,
       ObserverAllocation* allocation);
 
-  // Allow packets to be transmitted in up to 2 times max video bitrate if the
-  // bandwidth estimate allows it.
-  // TODO(bugs.webrtc.org/8541): May be worth to refactor to keep this logic in
-  // video send stream. Similar logic is implemented in
-  // AudioPriorityBitrateAllocationStrategy.
-  static uint8_t GetTransmissionMaxBitrateMultiplier();
-
   rtc::SequencedTaskChecker sequenced_checker_;
   LimitObserver* const limit_observer_ RTC_GUARDED_BY(&sequenced_checker_);
   // Stored in a list to keep track of the insertion order.
@@ -236,11 +203,8 @@ class BitrateAllocator : public BitrateAllocatorInterface {
   int64_t last_bwe_log_time_ RTC_GUARDED_BY(&sequenced_checker_);
   uint32_t total_requested_padding_bitrate_ RTC_GUARDED_BY(&sequenced_checker_);
   uint32_t total_requested_min_bitrate_ RTC_GUARDED_BY(&sequenced_checker_);
-  uint32_t total_requested_max_bitrate_ RTC_GUARDED_BY(&sequenced_checker_);
-  bool has_packet_feedback_ RTC_GUARDED_BY(&sequenced_checker_);
   std::unique_ptr<rtc::BitrateAllocationStrategy> bitrate_allocation_strategy_
       RTC_GUARDED_BY(&sequenced_checker_);
-  const uint8_t transmission_max_bitrate_multiplier_;
 };
 
 }  // namespace webrtc

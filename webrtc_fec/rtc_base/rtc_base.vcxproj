@@ -152,15 +152,13 @@
     <ClCompile Include="..\webrtc\src\rtc_base\copyonwritebuffer.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\criticalsection.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\event.cc" />
+    <ClCompile Include="..\webrtc\src\rtc_base\event_tracer.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\logging.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\platform_thread.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\platform_thread_types.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\random.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\sequenced_task_checker_impl.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\stringencode.cc" />
-    <ClCompile Include="..\webrtc\src\rtc_base\strings\string_builder.cc" />
-    <ClCompile Include="..\webrtc\src\rtc_base\synchronization\rw_lock_win.cc" />
-    <ClCompile Include="..\webrtc\src\rtc_base\synchronization\rw_lock_wrapper.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\task_queue_win.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\thread_checker_impl.cc" />
     <ClCompile Include="..\webrtc\src\rtc_base\timeutils.cc" />
@@ -185,6 +183,7 @@
     <ClInclude Include="..\webrtc\src\rtc_base\thread_checker.h" />
     <ClInclude Include="..\webrtc\src\rtc_base\thread_checker_impl.h" />
     <ClInclude Include="..\webrtc\src\rtc_base\timeutils.h" />
+    <ClInclude Include="..\webrtc\src\rtc_base\trace_event.h" />
     <ClInclude Include="..\webrtc\src\rtc_base\zero_memory.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

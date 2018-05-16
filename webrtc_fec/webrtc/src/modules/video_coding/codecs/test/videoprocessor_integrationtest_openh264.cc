@@ -12,7 +12,6 @@
 
 #include <vector>
 
-#include "media/base/mediaconstants.h"
 #include "test/testsupport/fileutils.h"
 
 namespace webrtc {
@@ -22,6 +21,7 @@ namespace test {
 
 namespace {
 // Codec settings.
+const bool kResilienceOn = true;
 const int kCifWidth = 352;
 const int kCifHeight = 288;
 const int kNumFrames = 100;
@@ -43,8 +43,8 @@ class VideoProcessorIntegrationTestOpenH264
 };
 
 TEST_F(VideoProcessorIntegrationTestOpenH264, ConstantHighBitrate) {
-  config_.SetCodecSettings(cricket::kH264CodecName, 1, 1, 1, false, true, false,
-                           kCifWidth, kCifHeight);
+  config_.SetCodecSettings(kVideoCodecH264, 1, 1, 1, false, true, false,
+                           kResilienceOn, kCifWidth, kCifHeight);
 
   std::vector<RateProfile> rate_profiles = {{500, 30, kNumFrames}};
 
@@ -63,8 +63,8 @@ TEST_F(VideoProcessorIntegrationTestOpenH264, SingleNalUnit) {
   config_.h264_codec_settings.packetization_mode =
       H264PacketizationMode::SingleNalUnit;
   config_.max_payload_size_bytes = 500;
-  config_.SetCodecSettings(cricket::kH264CodecName, 1, 1, 1, false, true, false,
-                           kCifWidth, kCifHeight);
+  config_.SetCodecSettings(kVideoCodecH264, 1, 1, 1, false, true, false,
+                           kResilienceOn, kCifWidth, kCifHeight);
 
   std::vector<RateProfile> rate_profiles = {{500, 30, kNumFrames}};
 

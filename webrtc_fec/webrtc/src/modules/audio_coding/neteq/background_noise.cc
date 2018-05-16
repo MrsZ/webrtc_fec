@@ -27,7 +27,8 @@ const size_t BackgroundNoise::kMaxLpcOrder;
 
 BackgroundNoise::BackgroundNoise(size_t num_channels)
     : num_channels_(num_channels),
-      channel_parameters_(new ChannelParameters[num_channels_]) {
+      channel_parameters_(new ChannelParameters[num_channels_]),
+      mode_(NetEq::kBgnOn) {
   Reset();
 }
 
@@ -38,6 +39,7 @@ void BackgroundNoise::Reset() {
   for (size_t channel = 0; channel < num_channels_; ++channel) {
     channel_parameters_[channel].Reset();
   }
+  // Keep _bgnMode as it is.
 }
 
 void BackgroundNoise::Update(const AudioMultiVector& input,

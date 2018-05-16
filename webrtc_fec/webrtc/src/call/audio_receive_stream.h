@@ -32,8 +32,6 @@ class AudioSinkInterface;
 class AudioReceiveStream {
  public:
   struct Stats {
-    Stats();
-    ~Stats();
     uint32_t remote_ssrc = 0;
     int64_t bytes_rcvd = 0;
     uint32_t packets_rcvd = 0;
@@ -73,16 +71,10 @@ class AudioReceiveStream {
   };
 
   struct Config {
-    Config();
-    ~Config();
-
     std::string ToString() const;
 
     // Receive-stream specific RTP settings.
     struct Rtp {
-      Rtp();
-      ~Rtp();
-
       std::string ToString() const;
 
       // Synchronization source (stream identifier) to be received.
@@ -119,8 +111,6 @@ class AudioReceiveStream {
     std::map<int, SdpAudioFormat> decoder_map;
 
     rtc::scoped_refptr<AudioDecoderFactory> decoder_factory;
-
-    rtc::Optional<AudioCodecPairId> codec_pair_id;
   };
 
   // Reconfigure the stream according to the Configuration.

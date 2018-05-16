@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "base/atomicops.h"
-#include "base/auto_reset.h"
 #include "base/bind.h"
 #include "base/bind_helpers.h"
 #include "base/compiler_specific.h"
@@ -68,7 +67,7 @@ class SchedulerWorkerPoolImpl::SchedulerWorkerDelegateImpl
       public BlockingObserver {
  public:
   // |outer| owns the worker for which this delegate is constructed.
-  SchedulerWorkerDelegateImpl(TrackedRef<SchedulerWorkerPoolImpl> outer);
+  SchedulerWorkerDelegateImpl(SchedulerWorkerPoolImpl* outer);
   ~SchedulerWorkerDelegateImpl() override;
 
   // SchedulerWorker::Delegate:
@@ -122,7 +121,7 @@ class SchedulerWorkerPoolImpl::SchedulerWorkerDelegateImpl
   // Called in GetWork() when a worker becomes idle.
   void OnWorkerBecomesIdleLockRequired(SchedulerWorker* worker);
 
-  const TrackedRef<SchedulerWorkerPoolImpl> outer_;
+  SchedulerWorkerPoolImpl* const outer_;
 
   // Time of the last detach.
   TimeTicks last_detach_time_;
@@ -165,13 +164,15 @@ SchedulerWorkerPoolImpl::SchedulerWorkerPoolImpl(
     StringPiece histogram_label,
     StringPiece pool_label,
     ThreadPriority priority_hint,
-    TrackedRef<TaskTracker> task_tracker,
+    TaskTracker* task_tracker,
     DelayedTaskManager* delayed_task_manager)
-    : SchedulerWorkerPool(std::move(task_tracker), delayed_task_manager),
+    : SchedulerWorkerPool(task_tracker, delayed_task_manager),
       pool_label_(pool_label.as_string()),
       priority_hint_(priority_hint),
       lock_(shared_priority_queue_.container_lock()),
       idle_workers_stack_cv_for_testing_(lock_.CreateConditionVariable()),
+      join_for_testing_returned_(WaitableEvent::ResetPolicy::MANUAL,
+                                 WaitableEvent::InitialState::NOT_SIGNALED),
       // Mimics the UMA_HISTOGRAM_LONG_TIMES macro.
       detach_duration_histogram_(Histogram::FactoryTimeGet(
           JoinString({kDetachDurationHistogramPrefix, histogram_label,
@@ -203,8 +204,7 @@ SchedulerWorkerPoolImpl::SchedulerWorkerPoolImpl(
           1,
           100,
           50,
-          HistogramBase::kUmaTargetedHistogramFlag)),
-      tracked_ref_factory_(this) {
+          HistogramBase::kUmaTargetedHistogramFlag)) {
   DCHECK(!histogram_label.empty());
   DCHECK(!pool_label_.empty());
 }
@@ -255,11 +255,12 @@ void SchedulerWorkerPoolImpl::Start(
 }
 
 SchedulerWorkerPoolImpl::~SchedulerWorkerPoolImpl() {
-  // SchedulerWorkerPool should only ever be deleted:
-  //  1) In tests, after JoinForTesting().
-  //  2) In production, iff initialization failed.
-  // In both cases |workers_| should be empty.
-  DCHECK(workers_.empty());
+  // SchedulerWorkerPool should never be deleted in production unless its
+  // initialization failed.
+#if DCHECK_IS_ON()
+  AutoSchedulerLock auto_lock(lock_);
+  DCHECK(join_for_testing_returned_.IsSignaled() || workers_.empty());
+#endif
 }
 
 void SchedulerWorkerPoolImpl::OnCanScheduleSequence(
@@ -289,34 +290,12 @@ int SchedulerWorkerPoolImpl::GetMaxConcurrentNonBlockedTasksDeprecated() const {
 
 void SchedulerWorkerPoolImpl::WaitForWorkersIdleForTesting(size_t n) {
   AutoSchedulerLock auto_lock(lock_);
-
-  DCHECK_EQ(0U, num_workers_cleaned_up_for_testing_)
-      << "Workers detached prior to waiting for a specific number of idle "
-         "workers. Doing the wait under such conditions is flaky.";
-
   WaitForWorkersIdleLockRequiredForTesting(n);
 }
 
 void SchedulerWorkerPoolImpl::WaitForAllWorkersIdleForTesting() {
   AutoSchedulerLock auto_lock(lock_);
   WaitForWorkersIdleLockRequiredForTesting(workers_.size());
-}
-
-void SchedulerWorkerPoolImpl::WaitForWorkersCleanedUpForTesting(size_t n) {
-  AutoSchedulerLock auto_lock(lock_);
-
-  DCHECK_EQ(0U, num_workers_cleaned_up_for_testing_)
-      << "Called WaitForWorkersCleanedUpForTesting() after some workers had "
-         "already cleaned up on their own.";
-
-  DCHECK(!num_workers_cleaned_up_for_testing_cv_)
-      << "Called WaitForWorkersCleanedUpForTesting() multiple times in the "
-         "same test.";
-
-  num_workers_cleaned_up_for_testing_cv_ = lock_.CreateConditionVariable();
-
-  while (num_workers_cleaned_up_for_testing_ < n)
-    num_workers_cleaned_up_for_testing_cv_->Wait();
 }
 
 void SchedulerWorkerPoolImpl::JoinForTesting() {
@@ -330,9 +309,9 @@ void SchedulerWorkerPoolImpl::JoinForTesting() {
 
     DCHECK_GT(workers_.size(), size_t(0)) << "Joined an unstarted worker pool.";
 
-    // Ensure SchedulerWorkers in |workers_| do not attempt to cleanup while
-    // being joined.
-    worker_cleanup_disallowed_for_testing_ = true;
+    DCHECK(!CanWorkerCleanupForTestingLockRequired() ||
+           suggested_reclaim_time_.is_max())
+        << "Workers can cleanup during join.";
 
     // Make a copy of the SchedulerWorkers so that we can call
     // SchedulerWorker::JoinForTesting() without holding |lock_| since
@@ -342,23 +321,41 @@ void SchedulerWorkerPoolImpl::JoinForTesting() {
   for (const auto& worker : workers_copy)
     worker->JoinForTesting();
 
-  AutoSchedulerLock auto_lock(lock_);
-  DCHECK(workers_ == workers_copy);
-  // Release |workers_| to clear their TrackedRef against |this|.
-  workers_.clear();
+#if DCHECK_IS_ON()
+  {
+    AutoSchedulerLock auto_lock(lock_);
+    DCHECK(workers_ == workers_copy);
+  }
+#endif
+
+  // Make sure recently cleaned up workers (ref.
+  // SchedulerWorkerDelegateImpl::CleanupLockRequired()) had time to exit as
+  // they have a raw reference to |this| (and to TaskTracker) which can
+  // otherwise result in racy use-after-frees per no longer being part of
+  // |workers_| and hence not being explicitly joined above :
+  // https://crbug.com/810464.
+  no_workers_remaining_for_testing_.Wait();
+
+  DCHECK(!join_for_testing_returned_.IsSignaled());
+  join_for_testing_returned_.Signal();
 }
 
-size_t SchedulerWorkerPoolImpl::NumberOfWorkersForTesting() const {
+void SchedulerWorkerPoolImpl::DisallowWorkerCleanupForTesting() {
+  AutoSchedulerLock auto_lock(lock_);
+  worker_cleanup_disallowed_for_testing_ = true;
+}
+
+size_t SchedulerWorkerPoolImpl::NumberOfWorkersForTesting() {
   AutoSchedulerLock auto_lock(lock_);
   return workers_.size();
 }
 
-size_t SchedulerWorkerPoolImpl::GetWorkerCapacityForTesting() const {
+size_t SchedulerWorkerPoolImpl::GetWorkerCapacityForTesting() {
   AutoSchedulerLock auto_lock(lock_);
   return worker_capacity_;
 }
 
-size_t SchedulerWorkerPoolImpl::NumberOfIdleWorkersForTesting() const {
+size_t SchedulerWorkerPoolImpl::NumberOfIdleWorkersForTesting() {
   AutoSchedulerLock auto_lock(lock_);
   return idle_workers_stack_.Size();
 }
@@ -368,10 +365,12 @@ void SchedulerWorkerPoolImpl::MaximizeMayBlockThresholdForTesting() {
 }
 
 SchedulerWorkerPoolImpl::SchedulerWorkerDelegateImpl::
-    SchedulerWorkerDelegateImpl(TrackedRef<SchedulerWorkerPoolImpl> outer)
-    : outer_(std::move(outer)) {
+    SchedulerWorkerDelegateImpl(SchedulerWorkerPoolImpl* outer)
+    : outer_(outer) {
   // Bound in OnMainEntry().
   DETACH_FROM_THREAD(worker_thread_checker_);
+
+  outer_->live_workers_count_for_testing_.Increment();
 }
 
 // OnMainExit() handles the thread-affine cleanup; SchedulerWorkerDelegateImpl
@@ -520,7 +519,7 @@ bool SchedulerWorkerPoolImpl::SchedulerWorkerDelegateImpl::
   DCHECK_CALLED_ON_VALID_THREAD(worker_thread_checker_);
 
   return worker != outer_->PeekAtIdleWorkersStackLockRequired() &&
-         LIKELY(!outer_->worker_cleanup_disallowed_for_testing_);
+         LIKELY(outer_->CanWorkerCleanupForTestingLockRequired());
 }
 
 void SchedulerWorkerPoolImpl::SchedulerWorkerDelegateImpl::CleanupLockRequired(
@@ -538,10 +537,6 @@ void SchedulerWorkerPoolImpl::SchedulerWorkerDelegateImpl::CleanupLockRequired(
       std::find(outer_->workers_.begin(), outer_->workers_.end(), worker);
   DCHECK(worker_iter != outer_->workers_.end());
   outer_->workers_.erase(worker_iter);
-
-  ++outer_->num_workers_cleaned_up_for_testing_;
-  if (outer_->num_workers_cleaned_up_for_testing_cv_)
-    outer_->num_workers_cleaned_up_for_testing_cv_->Signal();
 }
 
 void SchedulerWorkerPoolImpl::SchedulerWorkerDelegateImpl::
@@ -582,6 +577,11 @@ void SchedulerWorkerPoolImpl::SchedulerWorkerDelegateImpl::OnMainExit(
 #if defined(OS_WIN)
   win_thread_environment_.reset();
 #endif  // defined(OS_WIN)
+
+  if (!outer_->live_workers_count_for_testing_.Decrement()) {
+    DCHECK(!outer_->no_workers_remaining_for_testing_.IsSignaled());
+    outer_->no_workers_remaining_for_testing_.Signal();
+  }
 }
 
 void SchedulerWorkerPoolImpl::SchedulerWorkerDelegateImpl::
@@ -745,10 +745,6 @@ bool SchedulerWorkerPoolImpl::SchedulerWorkerDelegateImpl::
 void SchedulerWorkerPoolImpl::WaitForWorkersIdleLockRequiredForTesting(
     size_t n) {
   lock_.AssertAcquired();
-
-  // Make sure workers do not cleanup while watching the idle count.
-  AutoReset<bool> ban_cleanups(&worker_cleanup_disallowed_for_testing_, true);
-
   while (idle_workers_stack_.Size() < n)
     idle_workers_stack_cv_for_testing_->Wait();
 }
@@ -832,6 +828,11 @@ void SchedulerWorkerPoolImpl::RemoveFromIdleWorkersStackLockRequired(
   idle_workers_stack_.Remove(worker);
 }
 
+bool SchedulerWorkerPoolImpl::CanWorkerCleanupForTestingLockRequired() {
+  lock_.AssertAcquired();
+  return !worker_cleanup_disallowed_for_testing_;
+}
+
 SchedulerWorker*
 SchedulerWorkerPoolImpl::CreateRegisterAndStartSchedulerWorkerLockRequired() {
   lock_.AssertAcquired();
@@ -842,9 +843,7 @@ SchedulerWorkerPoolImpl::CreateRegisterAndStartSchedulerWorkerLockRequired() {
   // because in WakeUpOneWorker, |lock_| is first acquired and then
   // the thread lock is acquired when WakeUp is called on the worker.
   scoped_refptr<SchedulerWorker> worker = MakeRefCounted<SchedulerWorker>(
-      priority_hint_,
-      std::make_unique<SchedulerWorkerDelegateImpl>(
-          tracked_ref_factory_.GetTrackedRef()),
+      priority_hint_, std::make_unique<SchedulerWorkerDelegateImpl>(this),
       task_tracker_, &lock_, backward_compatibility_);
 
   if (!worker->Start())

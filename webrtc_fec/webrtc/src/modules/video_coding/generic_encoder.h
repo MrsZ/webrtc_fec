@@ -28,7 +28,7 @@ class MediaOptimization;
 }  // namespace media_optimization
 
 struct EncoderParameters {
-  VideoBitrateAllocation target_bitrate;
+  BitrateAllocation target_bitrate;
   uint8_t loss_rate;
   int64_t rtt;
   uint32_t input_frame_rate;
@@ -77,14 +77,6 @@ class VCMEncodedFrameCallback : public EncodedImageCallback {
   }
 
  private:
-  // For non-internal-source encoders, returns encode started time and fixes
-  // capture timestamp for the frame, if corrupted by the encoder.
-  rtc::Optional<int64_t> ExtractEncodeStartTime(size_t simulcast_svc_idx,
-                                                EncodedImage* encoded_image)
-      RTC_EXCLUSIVE_LOCKS_REQUIRED(timing_params_lock_);
-
-  void FillTimingInfo(size_t simulcast_svc_idx, EncodedImage* encoded_image);
-
   rtc::CriticalSection timing_params_lock_;
   bool internal_source_;
   EncodedImageCallback* const post_encode_callback_;
@@ -142,6 +134,7 @@ class VCMGenericEncoder {
   void SetEncoderParameters(const EncoderParameters& params);
   EncoderParameters GetEncoderParameters() const;
 
+  int32_t SetPeriodicKeyFrames(bool enable);
   int32_t RequestFrame(const std::vector<FrameType>& frame_types);
   bool InternalSource() const;
   bool SupportsNativeHandle() const;

@@ -25,7 +25,7 @@ namespace webrtc {
 // FftData type.
 class Aec3Fft {
  public:
-  enum class Window { kRectangular, kHanning, kSqrtHanning };
+  enum class Window { kRectangular, kHanning };
 
   Aec3Fft() = default;
   // Computes the FFT. Note that both the input and output are modified.
@@ -52,14 +52,6 @@ class Aec3Fft {
   // Fft. After that, x is copied to x_old.
   void PaddedFft(rtc::ArrayView<const float> x,
                  rtc::ArrayView<float> x_old,
-                 FftData* X) const {
-    PaddedFft(x, x_old, Window::kRectangular, X);
-  }
-
-  // Padded Fft using a time-domain window.
-  void PaddedFft(rtc::ArrayView<const float> x,
-                 rtc::ArrayView<float> x_old,
-                 Window window,
                  FftData* X) const;
 
  private:

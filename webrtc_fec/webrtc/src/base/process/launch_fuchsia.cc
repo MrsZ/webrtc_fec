@@ -16,7 +16,6 @@
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/fuchsia/default_job.h"
-#include "base/fuchsia/fuchsia_logging.h"
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "base/scoped_generic.h"
@@ -87,7 +86,7 @@ bool MapPathsToLaunchpad(const std::vector<std::string> paths_to_map,
     uint32_t types[FDIO_MAX_HANDLES] = {};
     status = fdio_transfer_fd(scoped_fd.get(), 0, handles, types);
     if (status != ZX_OK) {
-      ZX_LOG(ERROR, status) << "fdio_transfer_fd";
+      LOG(ERROR) << "fdio_transfer_fd failed: " << zx_status_get_string(status);
       return false;
     }
     ScopedZxHandle scoped_handle(handles[0]);
@@ -111,7 +110,8 @@ bool MapPathsToLaunchpad(const std::vector<std::string> paths_to_map,
     status = launchpad_add_handle(lp, scoped_handle.release(),
                                   PA_HND(PA_NS_DIR, paths_idx));
     if (status != ZX_OK) {
-      ZX_LOG(ERROR, status) << "launchpad_add_handle";
+      LOG(ERROR) << "launchpad_add_handle failed: "
+                 << zx_status_get_string(status);
       return false;
     }
     paths_c_str.push_back(next_path_str.c_str());
@@ -121,7 +121,8 @@ bool MapPathsToLaunchpad(const std::vector<std::string> paths_to_map,
     status =
         launchpad_set_nametable(lp, paths_c_str.size(), paths_c_str.data());
     if (status != ZX_OK) {
-      ZX_LOG(ERROR, status) << "launchpad_set_nametable";
+      LOG(ERROR) << "launchpad_set_nametable failed: "
+                 << zx_status_get_string(status);
       return false;
     }
   }
@@ -165,18 +166,19 @@ Process LaunchProcess(const std::vector<std::string>& argv,
   ScopedLaunchpad lp;
   zx_status_t status;
   if ((status = launchpad_create(job, argv_cstr[0], lp.receive())) != ZX_OK) {
-    ZX_LOG(ERROR, status) << "launchpad_create(job)";
+    LOG(ERROR) << "launchpad_create(job): " << zx_status_get_string(status);
     return Process();
   }
 
   if ((status = launchpad_load_from_file(lp.get(), argv_cstr[0])) != ZX_OK) {
-    ZX_LOG(ERROR, status) << "launchpad_load_from_file(" << argv_cstr[0] << ")";
+    LOG(ERROR) << "launchpad_load_from_file(): "
+               << zx_status_get_string(status);
     return Process();
   }
 
   if ((status = launchpad_set_args(lp.get(), argv.size(), argv_cstr.data())) !=
       ZX_OK) {
-    ZX_LOG(ERROR, status) << "launchpad_set_args";
+    LOG(ERROR) << "launchpad_set_args(): " << zx_status_get_string(status);
     return Process();
   }
 
@@ -204,7 +206,8 @@ Process LaunchProcess(const std::vector<std::string>& argv,
     zx_handle_t job_duplicate = ZX_HANDLE_INVALID;
     if ((status = zx_handle_duplicate(job, ZX_RIGHT_SAME_RIGHTS,
                                       &job_duplicate)) != ZX_OK) {
-      ZX_LOG(ERROR, status) << "zx_handle_duplicate";
+      LOG(ERROR) << "zx_handle_duplicate(job): "
+                 << zx_status_get_string(status);
       return Process();
     }
     launchpad_add_handle(lp.get(), job_duplicate, PA_HND(PA_JOB_DEFAULT, 0));
@@ -254,7 +257,8 @@ Process LaunchProcess(const std::vector<std::string>& argv,
   zx_handle_t process_handle;
   const char* errmsg;
   if ((status = launchpad_go(lp.get(), &process_handle, &errmsg)) != ZX_OK) {
-    ZX_LOG(ERROR, status) << "launchpad_go failed: " << errmsg;
+    LOG(ERROR) << "launchpad_go failed: " << errmsg
+               << ", status=" << zx_status_get_string(status);
     return Process();
   }
   ignore_result(lp.release());  // launchpad_go() took ownership.

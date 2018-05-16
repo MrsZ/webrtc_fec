@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "api/audio_codecs/builtin_audio_decoder_factory.h"
 #include "common_types.h"  // NOLINT(build/include)
 #include "modules/audio_coding/codecs/audio_format_conversion.h"
 #include "modules/audio_coding/include/audio_coding_module.h"
@@ -270,8 +269,7 @@ void EncodeDecodeTest::Perform() {
   codePars[1] = 0;
   codePars[2] = 0;
 
-  std::unique_ptr<AudioCodingModule> acm(AudioCodingModule::Create(
-      AudioCodingModule::Config(CreateBuiltinAudioDecoderFactory())));
+  std::unique_ptr<AudioCodingModule> acm(AudioCodingModule::Create());
   struct CodecInst sendCodecTmp;
   numCodecs = acm->NumberOfCodecs();
 
@@ -322,8 +320,7 @@ std::string EncodeDecodeTest::EncodeToFile(int fileType,
                                            int codeId,
                                            int* codePars,
                                            int testMode) {
-  std::unique_ptr<AudioCodingModule> acm(AudioCodingModule::Create(
-      AudioCodingModule::Config(CreateBuiltinAudioDecoderFactory())));
+  std::unique_ptr<AudioCodingModule> acm(AudioCodingModule::Create());
   RTPFile rtpFile;
   std::string fileName = webrtc::test::TempFilename(webrtc::test::OutputPath(),
                                                     "encode_decode_rtp");

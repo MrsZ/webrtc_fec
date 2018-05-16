@@ -232,12 +232,11 @@ void TestPhysicalInternal(const SocketAddress& int_addr) {
     }
   }
   if (ext_addr2.IsNil()) {
-    RTC_LOG(LS_WARNING) << "No available IP of same family as "
-                        << int_addr.ToString();
+    RTC_LOG(LS_WARNING) << "No available IP of same family as " << int_addr;
     return;
   }
 
-  RTC_LOG(LS_INFO) << "selected ip " << ext_addr2.ipaddr().ToString();
+  RTC_LOG(LS_INFO) << "selected ip " << ext_addr2.ipaddr();
 
   SocketAddress ext_addrs[4] = {
       SocketAddress(ext_addr1),

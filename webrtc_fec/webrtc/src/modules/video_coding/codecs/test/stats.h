@@ -36,12 +36,12 @@ struct FrameStatistics {
   bool encoding_successful = false;
   size_t encode_time_us = 0;
   size_t target_bitrate_kbps = 0;
-  size_t length_bytes = 0;
+  size_t encoded_frame_size_bytes = 0;
   webrtc::FrameType frame_type = kVideoFrameDelta;
 
   // Layering.
-  size_t spatial_idx = 0;
-  size_t temporal_idx = 0;
+  size_t temporal_layer_idx = 0;
+  size_t simulcast_svc_idx = 0;
   bool inter_layer_predicted = false;
 
   // H264 specific.
@@ -59,11 +59,8 @@ struct FrameStatistics {
   int qp = -1;
 
   // Quality.
-  float psnr_y = 0.0f;
-  float psnr_u = 0.0f;
-  float psnr_v = 0.0f;
-  float psnr = 0.0f;  // 10 * log10(255^2 / (mse_y + mse_u + mse_v)).
-  float ssim = 0.0f;  // 0.8 * ssim_y + 0.1 * (ssim_u + ssim_v).
+  float psnr = 0.0;
+  float ssim = 0.0;
 };
 
 struct VideoStatistics {
@@ -72,8 +69,8 @@ struct VideoStatistics {
   size_t target_bitrate_kbps = 0;
   float input_framerate_fps = 0.0f;
 
-  size_t spatial_idx = 0;
-  size_t temporal_idx = 0;
+  size_t spatial_layer_idx = 0;
+  size_t temporal_layer_idx = 0;
 
   size_t width = 0;
   size_t height = 0;
@@ -94,9 +91,6 @@ struct VideoStatistics {
   float avg_delta_frame_size_bytes = 0.0f;
   float avg_qp = 0.0f;
 
-  float avg_psnr_y = 0.0f;
-  float avg_psnr_u = 0.0f;
-  float avg_psnr_v = 0.0f;
   float avg_psnr = 0.0f;
   float min_psnr = 0.0f;
   float avg_ssim = 0.0f;
@@ -117,11 +111,12 @@ class Stats {
   ~Stats() = default;
 
   // Creates a FrameStatistics for the next frame to be processed.
-  FrameStatistics* AddFrame(size_t timestamp, size_t spatial_idx);
+  FrameStatistics* AddFrame(size_t timestamp, size_t spatial_layer_idx);
 
   // Returns the FrameStatistics corresponding to |frame_number| or |timestamp|.
-  FrameStatistics* GetFrame(size_t frame_number, size_t spatial_idx);
-  FrameStatistics* GetFrameWithTimestamp(size_t timestamp, size_t spatial_idx);
+  FrameStatistics* GetFrame(size_t frame_number, size_t spatial_layer_idx);
+  FrameStatistics* GetFrameWithTimestamp(size_t timestamp,
+                                         size_t spatial_layer_idx);
 
   std::vector<VideoStatistics> SliceAndCalcLayerVideoStatistic(
       size_t first_frame_num,
@@ -130,27 +125,25 @@ class Stats {
   VideoStatistics SliceAndCalcAggregatedVideoStatistic(size_t first_frame_num,
                                                        size_t last_frame_num);
 
-  void PrintFrameStatistics();
-
-  size_t Size(size_t spatial_idx);
+  size_t Size(size_t spatial_layer_idx);
 
   void Clear();
 
  private:
   FrameStatistics AggregateFrameStatistic(size_t frame_num,
-                                          size_t spatial_idx,
+                                          size_t spatial_layer_idx,
                                           bool aggregate_independent_layers);
 
   size_t CalcLayerTargetBitrateKbps(size_t first_frame_num,
                                     size_t last_frame_num,
-                                    size_t spatial_idx,
-                                    size_t temporal_idx,
+                                    size_t spatial_layer_idx,
+                                    size_t temporal_layer_idx,
                                     bool aggregate_independent_layers);
 
   VideoStatistics SliceAndCalcVideoStatistic(size_t first_frame_num,
                                              size_t last_frame_num,
-                                             size_t spatial_idx,
-                                             size_t temporal_idx,
+                                             size_t spatial_layer_idx,
+                                             size_t temporal_layer_idx,
                                              bool aggregate_independent_layers);
 
   void GetNumberOfEncodedLayers(size_t first_frame_num,
@@ -158,9 +151,7 @@ class Stats {
                                 size_t* num_encoded_spatial_layers,
                                 size_t* num_encoded_temporal_layers);
 
-  // layer_idx -> stats.
-  std::map<size_t, std::vector<FrameStatistics>> layer_stats_;
-  // layer_idx -> rtp_timestamp -> frame_num.
+  std::map<size_t, std::vector<FrameStatistics>> layer_idx_to_stats_;
   std::map<size_t, std::map<size_t, size_t>> rtp_timestamp_to_frame_num_;
 };
 

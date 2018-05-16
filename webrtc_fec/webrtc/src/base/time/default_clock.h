@@ -17,7 +17,7 @@ class BASE_EXPORT DefaultClock : public Clock {
   ~DefaultClock() override;
 
   // Simply returns Time::Now().
-  Time Now() const override;
+  Time Now() override;
 
   // Returns a shared instance of DefaultClock. This is thread-safe.
   static DefaultClock* GetInstance();

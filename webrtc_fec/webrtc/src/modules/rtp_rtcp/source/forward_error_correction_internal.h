@@ -12,8 +12,7 @@
 #define MODULES_RTP_RTCP_SOURCE_FORWARD_ERROR_CORRECTION_INTERNAL_H_
 
 #include "modules/include/module_common_types.h"
-
-#include "api/array_view.h"
+#include "typedefs.h"  // NOLINT(build/include)
 
 namespace webrtc {
 
@@ -25,11 +24,6 @@ constexpr size_t kUlpfecMaxMediaPackets = 48;
 constexpr size_t kUlpfecPacketMaskSizeLBitClear = 2;
 constexpr size_t kUlpfecPacketMaskSizeLBitSet = 6;
 
-// Packet code mask maximum length. kFECPacketMaskMaxSize = MaxNumFECPackets *
-// (kUlpfecMaxMediaPackets / 8), and MaxNumFECPackets is equal to maximum number
-// of media packets (kUlpfecMaxMediaPackets)
-constexpr size_t kFECPacketMaskMaxSize = 288;
-
 // Convenience constants.
 constexpr size_t kUlpfecMinPacketMaskSize = kUlpfecPacketMaskSizeLBitClear;
 constexpr size_t kUlpfecMaxPacketMaskSize = kUlpfecPacketMaskSizeLBitSet;
@@ -39,21 +33,18 @@ namespace internal {
 class PacketMaskTable {
  public:
   PacketMaskTable(FecMaskType fec_mask_type, int num_media_packets);
-  ~PacketMaskTable();
-
-  rtc::ArrayView<const uint8_t> LookUp(int num_media_packets,
-                                       int num_fec_packets);
+  ~PacketMaskTable() {}
+  FecMaskType fec_mask_type() const { return fec_mask_type_; }
+  const uint8_t* const* const* fec_packet_mask_table() const {
+    return fec_packet_mask_table_;
+  }
 
  private:
-  static const uint8_t* PickTable(FecMaskType fec_mask_type,
-                                  int num_media_packets);
-  const uint8_t* table_;
-  uint8_t fec_packet_mask_[kFECPacketMaskMaxSize];
+  FecMaskType InitMaskType(FecMaskType fec_mask_type, int num_media_packets);
+  const uint8_t* const* const* InitMaskTable(FecMaskType fec_mask_type_);
+  const FecMaskType fec_mask_type_;
+  const uint8_t* const* const* fec_packet_mask_table_;
 };
-
-rtc::ArrayView<const uint8_t> LookUpInFecTable(const uint8_t* table,
-                                               int media_packet_index,
-                                               int fec_index);
 
 // Returns an array of packet masks. The mask of a single FEC packet
 // corresponds to a number of mask bytes. The mask indicates which
@@ -76,11 +67,9 @@ rtc::ArrayView<const uint8_t> LookUpInFecTable(const uint8_t* table,
 // \param[out] packet_mask             A pointer to hold the packet mask array,
 //                                     of size: num_fec_packets *
 //                                     "number of mask bytes".
-void GeneratePacketMasks(int num_media_packets,
-                         int num_fec_packets,
-                         int num_imp_packets,
-                         bool use_unequal_protection,
-                         PacketMaskTable* mask_table,
+void GeneratePacketMasks(int num_media_packets, int num_fec_packets,
+                         int num_imp_packets, bool use_unequal_protection,
+                         const PacketMaskTable& mask_table,
                          uint8_t* packet_mask);
 
 // Returns the required packet mask size, given the number of sequence numbers

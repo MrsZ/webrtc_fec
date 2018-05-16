@@ -27,6 +27,7 @@
 #include "modules/audio_coding/neteq/preemptive_expand.h"
 #include "modules/audio_coding/neteq/sync_buffer.h"
 #include "modules/audio_coding/neteq/timestamp_scaler.h"
+#include "modules/include/module_common_types.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
@@ -312,9 +313,8 @@ TEST_F(NetEqImplTest, InsertPacket) {
 
   rtc::scoped_refptr<MockAudioDecoderFactory> mock_decoder_factory(
       new rtc::RefCountedObject<MockAudioDecoderFactory>);
-  EXPECT_CALL(*mock_decoder_factory, MakeAudioDecoderMock(_, _, _))
+  EXPECT_CALL(*mock_decoder_factory, MakeAudioDecoderMock(_, _))
       .WillOnce(Invoke([&](const SdpAudioFormat& format,
-                           rtc::Optional<AudioCodecPairId> codec_pair_id,
                            std::unique_ptr<AudioDecoder>* dec) {
         EXPECT_EQ("pcmu", format.name);
 
@@ -334,7 +334,7 @@ TEST_F(NetEqImplTest, InsertPacket) {
 
         *dec = std::move(mock_decoder);
       }));
-  DecoderDatabase::DecoderInfo info(NetEqDecoder::kDecoderPCMu, rtc::nullopt,
+  DecoderDatabase::DecoderInfo info(NetEqDecoder::kDecoderPCMu,
                                     mock_decoder_factory);
 
   // Expectations for decoder database.

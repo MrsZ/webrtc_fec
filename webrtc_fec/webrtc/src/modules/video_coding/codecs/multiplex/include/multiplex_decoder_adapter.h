@@ -25,8 +25,8 @@ namespace webrtc {
 class MultiplexDecoderAdapter : public VideoDecoder {
  public:
   // |factory| is not owned and expected to outlive this class' lifetime.
-  MultiplexDecoderAdapter(VideoDecoderFactory* factory,
-                          const SdpVideoFormat& associated_format);
+  explicit MultiplexDecoderAdapter(VideoDecoderFactory* factory,
+                                   const SdpVideoFormat& associated_format);
   virtual ~MultiplexDecoderAdapter();
 
   // Implements VideoDecoder

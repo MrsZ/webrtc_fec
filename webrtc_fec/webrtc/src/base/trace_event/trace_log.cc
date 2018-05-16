@@ -85,9 +85,7 @@ std::vector<std::unique_ptr<TraceEventFilter>>& GetCategoryGroupFilters() {
 }
 
 ThreadTicks ThreadNow() {
-  return ThreadTicks::IsSupported()
-             ? base::subtle::ThreadTicksNowIgnoringOverride()
-             : ThreadTicks();
+  return ThreadTicks::IsSupported() ? ThreadTicks::Now() : ThreadTicks();
 }
 
 template <typename T>
@@ -371,7 +369,7 @@ TraceLog::TraceLog()
   process_creation_time_ = CurrentProcessInfo::CreationTime();
 #else
   // Use approximate time when creation time is not available.
-  process_creation_time_ = TRACE_TIME_NOW();
+  process_creation_time_ = Time::Now();
 #endif
 
   logged_events_.reset(CreateTraceBuffer());
@@ -1033,7 +1031,7 @@ TraceEventHandle TraceLog::AddTraceEvent(
     std::unique_ptr<ConvertableToTraceFormat>* convertable_values,
     unsigned int flags) {
   int thread_id = static_cast<int>(base::PlatformThread::CurrentId());
-  base::TimeTicks now = TRACE_TIME_TICKS_NOW();
+  base::TimeTicks now = base::TimeTicks::Now();
   return AddTraceEventWithThreadIdAndTimestamp(
       phase,
       category_group_enabled,
@@ -1065,7 +1063,7 @@ TraceEventHandle TraceLog::AddTraceEventWithBindId(
     std::unique_ptr<ConvertableToTraceFormat>* convertable_values,
     unsigned int flags) {
   int thread_id = static_cast<int>(base::PlatformThread::CurrentId());
-  base::TimeTicks now = TRACE_TIME_TICKS_NOW();
+  base::TimeTicks now = base::TimeTicks::Now();
   return AddTraceEventWithThreadIdAndTimestamp(
       phase,
       category_group_enabled,
@@ -1096,7 +1094,7 @@ TraceEventHandle TraceLog::AddTraceEventWithProcessId(
     const unsigned long long* arg_values,
     std::unique_ptr<ConvertableToTraceFormat>* convertable_values,
     unsigned int flags) {
-  base::TimeTicks now = TRACE_TIME_TICKS_NOW();
+  base::TimeTicks now = base::TimeTicks::Now();
   return AddTraceEventWithThreadIdAndTimestamp(
       phase,
       category_group_enabled,
@@ -1495,7 +1493,7 @@ void TraceLog::AddMetadataEventsWhileLocked() {
         current_thread_id, "process_name", "name", process_name_);
   }
 
-  TimeDelta process_uptime = TRACE_TIME_NOW() - process_creation_time_;
+  TimeDelta process_uptime = Time::Now() - process_creation_time_;
   InitializeMetadataEvent(
       AddEventToThreadSharedChunkWhileLocked(nullptr, false), current_thread_id,
       "process_uptime_seconds", "uptime", process_uptime.InSeconds());
@@ -1703,12 +1701,19 @@ ScopedTraceBinaryEfficient::ScopedTraceBinaryEfficient(
   if (*category_group_enabled_) {
     event_handle_ =
         TRACE_EVENT_API_ADD_TRACE_EVENT_WITH_THREAD_ID_AND_TIMESTAMP(
-            TRACE_EVENT_PHASE_COMPLETE, category_group_enabled_, name,
-            trace_event_internal::kGlobalScope,                   // scope
-            trace_event_internal::kNoId,                          // id
+            TRACE_EVENT_PHASE_COMPLETE,
+            category_group_enabled_,
+            name,
+            trace_event_internal::kGlobalScope,  // scope
+            trace_event_internal::kNoId,  // id
             static_cast<int>(base::PlatformThread::CurrentId()),  // thread_id
-            TRACE_TIME_TICKS_NOW(), trace_event_internal::kZeroNumArgs, nullptr,
-            nullptr, nullptr, nullptr, TRACE_EVENT_FLAG_NONE);
+            base::TimeTicks::Now(),
+            trace_event_internal::kZeroNumArgs,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            TRACE_EVENT_FLAG_NONE);
   }
 }
 

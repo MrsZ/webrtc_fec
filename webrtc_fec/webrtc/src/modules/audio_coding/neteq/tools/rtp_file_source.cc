@@ -12,7 +12,9 @@
 
 #include <assert.h>
 #include <string.h>
-#ifndef WIN32
+#ifdef WIN32
+#include <winsock2.h>
+#else
 #include <netinet/in.h>
 #endif
 

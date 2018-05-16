@@ -41,22 +41,19 @@ class DefaultVideoBitrateAllocatorTest : public ::testing::Test {
 };
 
 TEST_F(DefaultVideoBitrateAllocatorTest, ZeroIsOff) {
-  VideoBitrateAllocation allocation =
-      allocator_->GetAllocation(0, kMaxFramerate);
+  BitrateAllocation allocation = allocator_->GetAllocation(0, kMaxFramerate);
   EXPECT_EQ(0u, allocation.get_sum_bps());
 }
 
 TEST_F(DefaultVideoBitrateAllocatorTest, Inactive) {
   codec_.active = false;
   allocator_.reset(new DefaultVideoBitrateAllocator(codec_));
-  VideoBitrateAllocation allocation =
-      allocator_->GetAllocation(1, kMaxFramerate);
+  BitrateAllocation allocation = allocator_->GetAllocation(1, kMaxFramerate);
   EXPECT_EQ(0u, allocation.get_sum_bps());
 }
 
 TEST_F(DefaultVideoBitrateAllocatorTest, CapsToMin) {
-  VideoBitrateAllocation allocation =
-      allocator_->GetAllocation(1, kMaxFramerate);
+  BitrateAllocation allocation = allocator_->GetAllocation(1, kMaxFramerate);
   EXPECT_EQ(kMinBitrateBps, allocation.get_sum_bps());
 
   allocation = allocator_->GetAllocation(kMinBitrateBps - 1, kMaxFramerate);
@@ -67,7 +64,7 @@ TEST_F(DefaultVideoBitrateAllocatorTest, CapsToMin) {
 }
 
 TEST_F(DefaultVideoBitrateAllocatorTest, CapsToMax) {
-  VideoBitrateAllocation allocation =
+  BitrateAllocation allocation =
       allocator_->GetAllocation(kMaxBitrateBps, kMaxFramerate);
   EXPECT_EQ(kMaxBitrateBps, allocation.get_sum_bps());
 
@@ -80,7 +77,7 @@ TEST_F(DefaultVideoBitrateAllocatorTest, CapsToMax) {
 }
 
 TEST_F(DefaultVideoBitrateAllocatorTest, GoodInBetween) {
-  VideoBitrateAllocation allocation =
+  BitrateAllocation allocation =
       allocator_->GetAllocation(kMinBitrateBps + 1, kMaxFramerate);
   EXPECT_EQ(kMinBitrateBps + 1, allocation.get_sum_bps());
 

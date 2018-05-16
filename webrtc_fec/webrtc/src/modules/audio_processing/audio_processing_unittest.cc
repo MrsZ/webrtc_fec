@@ -25,8 +25,10 @@
 #include "modules/audio_processing/common.h"
 #include "modules/audio_processing/include/audio_processing.h"
 #include "modules/audio_processing/include/mock_audio_processing.h"
+#include "modules/audio_processing/level_controller/level_controller_constants.h"
 #include "modules/audio_processing/test/protobuf_utils.h"
 #include "modules/audio_processing/test/test_utils.h"
+#include "modules/include/module_common_types.h"
 #include "rtc_base/arraysize.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/gtest_prod_util.h"
@@ -35,7 +37,6 @@
 #include "rtc_base/numerics/safe_minmax.h"
 #include "rtc_base/protobuf_utils.h"
 #include "rtc_base/refcountedobject.h"
-#include "rtc_base/swap_queue.h"
 #include "rtc_base/task_queue.h"
 #include "rtc_base/thread.h"
 #include "system_wrappers/include/event_wrapper.h"
@@ -2820,32 +2821,96 @@ INSTANTIATE_TEST_CASE_P(
 
 }  // namespace
 
-TEST(RuntimeSettingTest, TestDefaultCtor) {
-  auto s = AudioProcessing::RuntimeSetting();
-  EXPECT_EQ(AudioProcessing::RuntimeSetting::Type::kNotSpecified, s.type());
+TEST(ApmConfiguration, DefaultBehavior) {
+  // Verify that the level controller is default off, it can be activated using
+  // the config, and that the default initial level is maintained after the
+  // config has been applied.
+  std::unique_ptr<AudioProcessingImpl> apm(
+      new rtc::RefCountedObject<AudioProcessingImpl>(webrtc::Config()));
+  AudioProcessing::Config config;
+  EXPECT_FALSE(apm->config_.level_controller.enabled);
+  // TODO(peah): Add test for the existence of the level controller object once
+  // that is created only when that is specified in the config.
+  // TODO(peah): Remove the testing for
+  // apm->capture_nonlocked_.level_controller_enabled once the value in config_
+  // is instead used to activate the level controller.
+  EXPECT_FALSE(apm->capture_nonlocked_.level_controller_enabled);
+  EXPECT_NEAR(kTargetLcPeakLeveldBFS,
+              apm->config_.level_controller.initial_peak_level_dbfs,
+              std::numeric_limits<float>::epsilon());
+  config.level_controller.enabled = true;
+  apm->ApplyConfig(config);
+  EXPECT_TRUE(apm->config_.level_controller.enabled);
+  // TODO(peah): Add test for the existence of the level controller object once
+  // that is created only when the that is specified in the config.
+  // TODO(peah): Remove the testing for
+  // apm->capture_nonlocked_.level_controller_enabled once the value in config_
+  // is instead used to activate the level controller.
+  EXPECT_TRUE(apm->capture_nonlocked_.level_controller_enabled);
+  EXPECT_NEAR(kTargetLcPeakLeveldBFS,
+              apm->config_.level_controller.initial_peak_level_dbfs,
+              std::numeric_limits<float>::epsilon());
 }
 
-TEST(RuntimeSettingTest, TestCapturePreGain) {
-  using Type = AudioProcessing::RuntimeSetting::Type;
-  {
-    auto s = AudioProcessing::RuntimeSetting::CreateCapturePreGain(1.25f);
-    EXPECT_EQ(Type::kCapturePreGain, s.type());
-    float v;
-    s.GetFloat(&v);
-    EXPECT_EQ(1.25f, v);
-  }
-
-#if RTC_DCHECK_IS_ON && GTEST_HAS_DEATH_TEST && !defined(WEBRTC_ANDROID)
-  EXPECT_DEATH(AudioProcessing::RuntimeSetting::CreateCapturePreGain(0.1f), "");
-#endif
+TEST(ApmConfiguration, ValidConfigBehavior) {
+  // Verify that the initial level can be specified and is retained after the
+  // config has been applied.
+  std::unique_ptr<AudioProcessingImpl> apm(
+      new rtc::RefCountedObject<AudioProcessingImpl>(webrtc::Config()));
+  AudioProcessing::Config config;
+  config.level_controller.initial_peak_level_dbfs = -50.f;
+  apm->ApplyConfig(config);
+  EXPECT_FALSE(apm->config_.level_controller.enabled);
+  // TODO(peah): Add test for the existence of the level controller object once
+  // that is created only when the that is specified in the config.
+  // TODO(peah): Remove the testing for
+  // apm->capture_nonlocked_.level_controller_enabled once the value in config_
+  // is instead used to activate the level controller.
+  EXPECT_FALSE(apm->capture_nonlocked_.level_controller_enabled);
+  EXPECT_NEAR(-50.f, apm->config_.level_controller.initial_peak_level_dbfs,
+              std::numeric_limits<float>::epsilon());
 }
 
-TEST(RuntimeSettingTest, TestUsageWithSwapQueue) {
-  SwapQueue<AudioProcessing::RuntimeSetting> q(1);
-  auto s = AudioProcessing::RuntimeSetting();
-  ASSERT_TRUE(q.Insert(&s));
-  ASSERT_TRUE(q.Remove(&s));
-  EXPECT_EQ(AudioProcessing::RuntimeSetting::Type::kNotSpecified, s.type());
+TEST(ApmConfiguration, InValidConfigBehavior) {
+  // Verify that the config is properly reset when nonproper values are applied
+  // for the initial level.
+
+  // Verify that the config is properly reset when the specified initial peak
+  // level is too low.
+  std::unique_ptr<AudioProcessingImpl> apm(
+      new rtc::RefCountedObject<AudioProcessingImpl>(webrtc::Config()));
+  AudioProcessing::Config config;
+  config.level_controller.enabled = true;
+  config.level_controller.initial_peak_level_dbfs = -101.f;
+  apm->ApplyConfig(config);
+  EXPECT_FALSE(apm->config_.level_controller.enabled);
+  // TODO(peah): Add test for the existence of the level controller object once
+  // that is created only when the that is specified in the config.
+  // TODO(peah): Remove the testing for
+  // apm->capture_nonlocked_.level_controller_enabled once the value in config_
+  // is instead used to activate the level controller.
+  EXPECT_FALSE(apm->capture_nonlocked_.level_controller_enabled);
+  EXPECT_NEAR(kTargetLcPeakLeveldBFS,
+              apm->config_.level_controller.initial_peak_level_dbfs,
+              std::numeric_limits<float>::epsilon());
+
+  // Verify that the config is properly reset when the specified initial peak
+  // level is too high.
+  apm.reset(new rtc::RefCountedObject<AudioProcessingImpl>(webrtc::Config()));
+  config = AudioProcessing::Config();
+  config.level_controller.enabled = true;
+  config.level_controller.initial_peak_level_dbfs = 1.f;
+  apm->ApplyConfig(config);
+  EXPECT_FALSE(apm->config_.level_controller.enabled);
+  // TODO(peah): Add test for the existence of the level controller object once
+  // that is created only when that is specified in the config.
+  // TODO(peah): Remove the testing for
+  // apm->capture_nonlocked_.level_controller_enabled once the value in config_
+  // is instead used to activate the level controller.
+  EXPECT_FALSE(apm->capture_nonlocked_.level_controller_enabled);
+  EXPECT_NEAR(kTargetLcPeakLeveldBFS,
+              apm->config_.level_controller.initial_peak_level_dbfs,
+              std::numeric_limits<float>::epsilon());
 }
 
 TEST(ApmConfiguration, EnablePostProcessing) {
@@ -2942,6 +3007,7 @@ std::unique_ptr<AudioProcessing> CreateApm(bool use_AEC2) {
   config.residual_echo_detector.enabled = true;
   config.high_pass_filter.enabled = false;
   config.gain_controller2.enabled = false;
+  config.level_controller.enabled = false;
   apm->ApplyConfig(config);
   EXPECT_EQ(apm->gain_control()->Enable(false), 0);
   EXPECT_EQ(apm->level_estimator()->Enable(false), 0);

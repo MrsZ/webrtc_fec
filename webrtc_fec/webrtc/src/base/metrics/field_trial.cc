@@ -981,11 +981,10 @@ FieldTrial* FieldTrialList::CreateFieldTrial(
 }
 
 // static
-bool FieldTrialList::AddObserver(Observer* observer) {
+void FieldTrialList::AddObserver(Observer* observer) {
   if (!global_)
-    return false;
+    return;
   global_->observer_list_->AddObserver(observer);
-  return true;
 }
 
 // static
@@ -993,18 +992,6 @@ void FieldTrialList::RemoveObserver(Observer* observer) {
   if (!global_)
     return;
   global_->observer_list_->RemoveObserver(observer);
-}
-
-// static
-void FieldTrialList::SetSynchronousObserver(Observer* observer) {
-  DCHECK(!global_->synchronous_observer_);
-  global_->synchronous_observer_ = observer;
-}
-
-// static
-void FieldTrialList::RemoveSynchronousObserver(Observer* observer) {
-  DCHECK_EQ(global_->synchronous_observer_, observer);
-  global_->synchronous_observer_ = nullptr;
 }
 
 // static
@@ -1046,11 +1033,6 @@ void FieldTrialList::NotifyFieldTrialGroupSelection(FieldTrial* field_trial) {
   if (tracker) {
     tracker->RecordFieldTrial(field_trial->trial_name(),
                               field_trial->group_name_internal());
-  }
-
-  if (global_->synchronous_observer_) {
-    global_->synchronous_observer_->OnFieldTrialGroupFinalized(
-        field_trial->trial_name(), field_trial->group_name_internal());
   }
 
   global_->observer_list_->Notify(
@@ -1460,14 +1442,15 @@ void FieldTrialList::ActivateFieldTrialEntryWhileLocked(
   FieldTrialAllocator* allocator = global_->field_trial_allocator_.get();
 
   // Check if we're in the child process and return early if so.
-  if (!allocator || allocator->IsReadonly())
+  if (allocator && allocator->IsReadonly())
     return;
 
   FieldTrial::FieldTrialRef ref = field_trial->ref_;
   if (ref == FieldTrialAllocator::kReferenceNull) {
     // It's fine to do this even if the allocator hasn't been instantiated
     // yet -- it'll just return early.
-    AddToAllocatorWhileLocked(allocator, field_trial);
+    AddToAllocatorWhileLocked(global_->field_trial_allocator_.get(),
+                              field_trial);
   } else {
     // It's also okay to do this even though the callee doesn't have a lock --
     // the only thing that happens on a stale read here is a slight performance

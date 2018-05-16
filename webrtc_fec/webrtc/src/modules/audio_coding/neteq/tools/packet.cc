@@ -14,6 +14,7 @@
 
 #include <memory>
 
+#include "modules/include/module_common_types.h"
 #include "modules/rtp_rtcp/include/rtp_header_parser.h"
 #include "rtc_base/checks.h"
 

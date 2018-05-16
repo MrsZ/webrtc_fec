@@ -15,10 +15,10 @@
 
 // OVERVIEW:
 //
-// A container for a list of (repeating) callbacks. Unlike a normal vector or
-// list, this container can be modified during iteration without invalidating
-// the iterator. It safely handles the case of a callback removing itself or
-// another callback from the list while callbacks are being run.
+// A container for a list of callbacks.  Unlike a normal STL vector or list,
+// this container can be modified during iteration without invalidating the
+// iterator. It safely handles the case of a callback removing itself
+// or another callback from the list while callbacks are being run.
 //
 // TYPICAL USAGE:
 //
@@ -26,8 +26,10 @@
 //  public:
 //   ...
 //
+//   typedef base::Callback<void(const Foo&)> OnFooCallback;
+//
 //   std::unique_ptr<base::CallbackList<void(const Foo&)>::Subscription>
-//   RegisterCallback(const base::RepeatingCallback<void(const Foo&)>& cb) {
+//   RegisterCallback(const OnFooCallback& cb) {
 //     return callback_list_.Add(cb);
 //   }
 //
@@ -46,7 +48,7 @@
 //  public:
 //   MyWidgetListener::MyWidgetListener() {
 //     foo_subscription_ = MyWidget::GetCurrent()->RegisterCallback(
-//             base::BindRepeating(&MyWidgetListener::OnFoo, this)));
+//             base::Bind(&MyWidgetListener::OnFoo, this)));
 //   }
 //
 //   MyWidgetListener::~MyWidgetListener() {
@@ -102,12 +104,12 @@ class CallbackListBase {
   // CallbackList is destroyed.
   std::unique_ptr<Subscription> Add(const CallbackType& cb) WARN_UNUSED_RESULT {
     DCHECK(!cb.is_null());
-    return std::make_unique<Subscription>(
-        this, callbacks_.insert(callbacks_.end(), cb));
+    return std::unique_ptr<Subscription>(
+        new Subscription(this, callbacks_.insert(callbacks_.end(), cb)));
   }
 
   // Sets a callback which will be run when a subscription list is changed.
-  void set_removal_callback(const RepeatingClosure& callback) {
+  void set_removal_callback(const Closure& callback) {
     removal_callback_ = callback;
   }
 
@@ -144,7 +146,7 @@ class CallbackListBase {
       while ((list_iter_ != list_->callbacks_.end()) && list_iter_->is_null())
         ++list_iter_;
 
-      CallbackType* cb = nullptr;
+      CallbackType* cb = NULL;
       if (list_iter_ != list_->callbacks_.end()) {
         cb = &(*list_iter_);
         ++list_iter_;
@@ -170,10 +172,10 @@ class CallbackListBase {
     return Iterator(this);
   }
 
-  // Compact the list: remove any entries which were nulled out during
+  // Compact the list: remove any entries which were NULLed out during
   // iteration.
   void Compact() {
-    auto it = callbacks_.begin();
+    typename std::list<CallbackType>::iterator it = callbacks_.begin();
     bool updated = false;
     while (it != callbacks_.end()) {
       if ((*it).is_null()) {
@@ -191,7 +193,7 @@ class CallbackListBase {
  private:
   std::list<CallbackType> callbacks_;
   int active_iterator_count_;
-  RepeatingClosure removal_callback_;
+  Closure removal_callback_;
 
   DISALLOW_COPY_AND_ASSIGN(CallbackListBase);
 };
@@ -202,17 +204,18 @@ template <typename Sig> class CallbackList;
 
 template <typename... Args>
 class CallbackList<void(Args...)>
-    : public internal::CallbackListBase<RepeatingCallback<void(Args...)>> {
+    : public internal::CallbackListBase<Callback<void(Args...)> > {
  public:
-  using CallbackType = RepeatingCallback<void(Args...)>;
+  typedef Callback<void(Args...)> CallbackType;
 
   CallbackList() = default;
 
   template <typename... RunArgs>
   void Notify(RunArgs&&... args) {
-    auto it = this->GetIterator();
+    typename internal::CallbackListBase<CallbackType>::Iterator it =
+        this->GetIterator();
     CallbackType* cb;
-    while ((cb = it.GetNext()) != nullptr) {
+    while ((cb = it.GetNext()) != NULL) {
       cb->Run(args...);
     }
   }

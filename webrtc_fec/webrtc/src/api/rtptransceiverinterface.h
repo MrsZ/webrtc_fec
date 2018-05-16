@@ -14,7 +14,6 @@
 #include <string>
 #include <vector>
 
-#include "api/array_view.h"
 #include "api/optional.h"
 #include "api/rtpreceiverinterface.h"
 #include "api/rtpsenderinterface.h"
@@ -41,7 +40,8 @@ struct RtpTransceiverInit final {
   RtpTransceiverDirection direction = RtpTransceiverDirection::kSendRecv;
 
   // The added RtpTransceiver will be added to these streams.
-  std::vector<std::string> stream_ids;
+  // TODO(bugs.webrtc.org/7600): Not implemented.
+  std::vector<std::string> stream_labels;
 
   // TODO(bugs.webrtc.org/7600): Not implemented.
   std::vector<RtpEncodingParameters> send_encodings;

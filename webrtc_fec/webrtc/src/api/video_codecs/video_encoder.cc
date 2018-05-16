@@ -17,6 +17,7 @@ VideoCodecVP8 VideoEncoder::GetDefaultVp8Settings() {
   VideoCodecVP8 vp8_settings;
   memset(&vp8_settings, 0, sizeof(vp8_settings));
 
+  vp8_settings.resilience = kResilientStream;
   vp8_settings.numberOfTemporalLayers = 1;
   vp8_settings.denoisingOn = true;
   vp8_settings.automaticResizeOn = false;
@@ -30,6 +31,7 @@ VideoCodecVP9 VideoEncoder::GetDefaultVp9Settings() {
   VideoCodecVP9 vp9_settings;
   memset(&vp9_settings, 0, sizeof(vp9_settings));
 
+  vp9_settings.resilienceOn = true;
   vp9_settings.numberOfTemporalLayers = 1;
   vp9_settings.denoisingOn = true;
   vp9_settings.frameDroppingOn = true;
@@ -84,13 +86,17 @@ int32_t VideoEncoder::SetRates(uint32_t bitrate, uint32_t framerate) {
 }
 
 int32_t VideoEncoder::SetRateAllocation(
-    const VideoBitrateAllocation& allocation,
+    const BitrateAllocation& allocation,
     uint32_t framerate) {
   return SetRates(allocation.get_sum_kbps(), framerate);
 }
 
 VideoEncoder::ScalingSettings VideoEncoder::GetScalingSettings() const {
   return ScalingSettings::kOff;
+}
+
+int32_t VideoEncoder::SetPeriodicKeyFrames(bool enable) {
+  return -1;
 }
 
 bool VideoEncoder::SupportsNativeHandle() const {

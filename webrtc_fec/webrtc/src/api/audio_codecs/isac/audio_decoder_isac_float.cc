@@ -36,8 +36,7 @@ void AudioDecoderIsacFloat::AppendSupportedDecoders(
 }
 
 std::unique_ptr<AudioDecoder> AudioDecoderIsacFloat::MakeAudioDecoder(
-    Config config,
-    rtc::Optional<AudioCodecPairId> /*codec_pair_id*/) {
+    Config config) {
   RTC_DCHECK(config.IsOk());
   return rtc::MakeUnique<AudioDecoderIsacFloatImpl>(config.sample_rate_hz);
 }

@@ -11,7 +11,6 @@
 #ifndef RTC_BASE_SEQUENCED_TASK_CHECKER_IMPL_H_
 #define RTC_BASE_SEQUENCED_TASK_CHECKER_IMPL_H_
 
-#include "rtc_base/criticalsection.h"
 #include "rtc_base/thread_checker.h"
 
 namespace rtc {

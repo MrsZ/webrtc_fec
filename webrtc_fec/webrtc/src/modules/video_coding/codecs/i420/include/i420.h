@@ -131,6 +131,9 @@ class I420Decoder : public VideoDecoder {
                                       uint16_t* width,
                                       uint16_t* height);
 
+  int _width;
+  int _height;
+  bool _inited;
   DecodedImageCallback* _decodeCompleteCallback;
 };  // class I420Decoder
 

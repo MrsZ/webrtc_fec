@@ -552,16 +552,19 @@ TEST_F(NetworkTest, TestMultipleIPMergeNetworkList) {
       // But with two addresses now.
       EXPECT_EQ(2U, (*it)->GetIPs().size());
       EXPECT_NE((*it)->GetIPs().end(),
-                std::find((*it)->GetIPs().begin(), (*it)->GetIPs().end(),
-                          InterfaceAddress(check_ip)));
+                std::find((*it)->GetIPs().begin(),
+                          (*it)->GetIPs().end(),
+                          check_ip));
       EXPECT_NE((*it)->GetIPs().end(),
-                std::find((*it)->GetIPs().begin(), (*it)->GetIPs().end(),
-                          InterfaceAddress(ip)));
+                std::find((*it)->GetIPs().begin(),
+                          (*it)->GetIPs().end(),
+                          ip));
     } else {
       // Check the IP didn't get added anywhere it wasn't supposed to.
       EXPECT_EQ((*it)->GetIPs().end(),
-                std::find((*it)->GetIPs().begin(), (*it)->GetIPs().end(),
-                          InterfaceAddress(ip)));
+                std::find((*it)->GetIPs().begin(),
+                          (*it)->GetIPs().end(),
+                          ip));
     }
   }
 }
@@ -603,8 +606,9 @@ TEST_F(NetworkTest, TestMultiplePublicNetworksOnOneInterfaceMerge) {
     } else {
       // Check the IP didn't get added anywhere it wasn't supposed to.
       EXPECT_EQ((*it)->GetIPs().end(),
-                std::find((*it)->GetIPs().begin(), (*it)->GetIPs().end(),
-                          InterfaceAddress(ip)));
+                std::find((*it)->GetIPs().begin(),
+                          (*it)->GetIPs().end(),
+                          ip));
     }
   }
 }
@@ -958,8 +962,8 @@ TEST_F(NetworkTest, TestMergeNetworkList) {
   // IPAddresses.
   EXPECT_EQ(list2.size(), 1uL);
   EXPECT_EQ(list2[0]->GetIPs().size(), 2uL);
-  EXPECT_EQ(list2[0]->GetIPs()[0], InterfaceAddress(ip1));
-  EXPECT_EQ(list2[0]->GetIPs()[1], InterfaceAddress(ip2));
+  EXPECT_EQ(list2[0]->GetIPs()[0], ip1);
+  EXPECT_EQ(list2[0]->GetIPs()[1], ip2);
 }
 
 // Test that MergeNetworkList successfully detects the change if

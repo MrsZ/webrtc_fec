@@ -121,7 +121,6 @@ class MockEchoControl : public EchoControl {
   MOCK_METHOD2(ProcessCapture,
                void(AudioBuffer* capture, bool echo_path_change));
   MOCK_CONST_METHOD0(GetMetrics, Metrics());
-  MOCK_METHOD1(SetAudioBufferDelay, void(size_t delay_ms));
 };
 
 class MockVoiceDetection : public VoiceDetection {
@@ -168,7 +167,6 @@ class MockAudioProcessing : public testing::NiceMock<AudioProcessing> {
   MOCK_CONST_METHOD0(num_output_channels, size_t());
   MOCK_CONST_METHOD0(num_reverse_channels, size_t());
   MOCK_METHOD1(set_output_will_be_muted, void(bool muted));
-  MOCK_METHOD1(SetRuntimeSetting, void(RuntimeSetting setting));
   MOCK_METHOD1(ProcessStream, int(AudioFrame* frame));
   MOCK_METHOD7(ProcessStream, int(const float* const* src,
                                   size_t samples_per_channel,
@@ -199,10 +197,6 @@ class MockAudioProcessing : public testing::NiceMock<AudioProcessing> {
 
   virtual void AttachAecDump(std::unique_ptr<AecDump> aec_dump) {}
   MOCK_METHOD0(DetachAecDump, void());
-
-  virtual void AttachPlayoutAudioGenerator(
-      std::unique_ptr<AudioGenerator> audio_generator) {}
-  MOCK_METHOD0(DetachPlayoutAudioGenerator, void());
 
   MOCK_METHOD0(UpdateHistogramsOnCallEnd, void());
   MOCK_CONST_METHOD0(GetStatistics, AudioProcessingStatistics());

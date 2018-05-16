@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "modules/audio_processing/include/aec_dump.h"
+#include "modules/include/module_common_types.h"
 #include "test/gmock.h"
 
 namespace webrtc {

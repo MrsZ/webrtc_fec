@@ -12,7 +12,6 @@
 
 #include "api/video/i420_buffer.h"
 #include "common_types.h"  // NOLINT(build/include)
-#include "media/base/mediaconstants.h"
 #include "modules/video_coding/codecs/test/videoprocessor.h"
 #include "modules/video_coding/include/mock/mock_video_codec_interface.h"
 #include "modules/video_coding/include/video_coding.h"
@@ -52,7 +51,7 @@ const int kFrameSize = kWidth * kHeight * 3 / 2;  // I420.
 class VideoProcessorTest : public testing::Test {
  protected:
   VideoProcessorTest() : q_("VP queue") {
-    config_.SetCodecSettings(cricket::kVp8CodecName, 1, 1, 1, false, false,
+    config_.SetCodecSettings(kVideoCodecVP8, 1, 1, 1, false, false, false,
                              false, kWidth, kHeight);
 
     decoder_mock_ = new MockVideoDecoder();
@@ -166,7 +165,7 @@ TEST_F(VideoProcessorTest, SetRates) {
   const int kFramerateFps = 17;
   EXPECT_CALL(encoder_mock_,
               SetRateAllocation(
-                  Property(&VideoBitrateAllocation::get_sum_kbps, kBitrateKbps),
+                  Property(&BitrateAllocation::get_sum_kbps, kBitrateKbps),
                   kFramerateFps))
       .Times(1);
   DO_SYNC(q_, { video_processor_->SetRates(kBitrateKbps, kFramerateFps); });
@@ -174,9 +173,9 @@ TEST_F(VideoProcessorTest, SetRates) {
   const int kNewBitrateKbps = 456;
   const int kNewFramerateFps = 34;
   EXPECT_CALL(encoder_mock_,
-              SetRateAllocation(Property(&VideoBitrateAllocation::get_sum_kbps,
-                                         kNewBitrateKbps),
-                                kNewFramerateFps))
+              SetRateAllocation(
+                  Property(&BitrateAllocation::get_sum_kbps, kNewBitrateKbps),
+                  kNewFramerateFps))
       .Times(1);
   DO_SYNC(q_,
           { video_processor_->SetRates(kNewBitrateKbps, kNewFramerateFps); });

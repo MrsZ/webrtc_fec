@@ -38,6 +38,11 @@ RTPReceiverVideo::RTPReceiverVideo(RtpData* data_callback)
 RTPReceiverVideo::~RTPReceiverVideo() {
 }
 
+bool RTPReceiverVideo::ShouldReportCsrcChanges(uint8_t payload_type) const {
+  // Always do this for video packets.
+  return true;
+}
+
 int32_t RTPReceiverVideo::OnNewPayloadTypeCreated(
     int payload_type,
     const SdpAudioFormat& audio_format) {
@@ -47,6 +52,7 @@ int32_t RTPReceiverVideo::OnNewPayloadTypeCreated(
 
 int32_t RTPReceiverVideo::ParseRtpPacket(WebRtcRTPHeader* rtp_header,
                                          const PayloadUnion& specific_payload,
+                                         bool is_red,
                                          const uint8_t* payload,
                                          size_t payload_length,
                                          int64_t timestamp_ms) {
@@ -120,6 +126,16 @@ TelephoneEventHandler* RTPReceiverVideo::GetTelephoneEventHandler() {
 RTPAliveType RTPReceiverVideo::ProcessDeadOrAlive(
     uint16_t last_payload_length) const {
   return kRtpDead;
+}
+
+int32_t RTPReceiverVideo::InvokeOnInitializeDecoder(
+    RtpFeedback* callback,
+    int8_t payload_type,
+    const char payload_name[RTP_PAYLOAD_NAME_SIZE],
+    const PayloadUnion& specific_payload) const {
+  // TODO(pbos): Remove as soon as audio can handle a changing payload type
+  // without this callback.
+  return 0;
 }
 
 }  // namespace webrtc

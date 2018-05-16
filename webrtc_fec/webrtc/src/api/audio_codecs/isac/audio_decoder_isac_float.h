@@ -14,7 +14,6 @@
 #include <memory>
 #include <vector>
 
-#include "api/audio_codecs/audio_codec_pair_id.h"
 #include "api/audio_codecs/audio_decoder.h"
 #include "api/audio_codecs/audio_format.h"
 #include "api/optional.h"
@@ -34,9 +33,7 @@ struct AudioDecoderIsacFloat {
   };
   static rtc::Optional<Config> SdpToConfig(const SdpAudioFormat& audio_format);
   static void AppendSupportedDecoders(std::vector<AudioCodecSpec>* specs);
-  static std::unique_ptr<AudioDecoder> MakeAudioDecoder(
-      Config config,
-      rtc::Optional<AudioCodecPairId> codec_pair_id = rtc::nullopt);
+  static std::unique_ptr<AudioDecoder> MakeAudioDecoder(Config config);
 };
 
 }  // namespace webrtc

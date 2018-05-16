@@ -10,7 +10,7 @@ namespace base {
 namespace internal {
 
 PlatformNativeWorkerPoolWin::PlatformNativeWorkerPoolWin(
-    TrackedRef<TaskTracker> task_tracker,
+    TaskTracker* task_tracker,
     DelayedTaskManager* delayed_task_manager)
     : SchedulerWorkerPool(task_tracker, delayed_task_manager) {}
 

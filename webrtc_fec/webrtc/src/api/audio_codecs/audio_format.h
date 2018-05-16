@@ -17,7 +17,6 @@
 #include <utility>
 
 #include "api/optional.h"
-#include "rtc_base/checks.h"
 
 namespace webrtc {
 

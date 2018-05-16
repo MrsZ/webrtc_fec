@@ -14,8 +14,6 @@
 #ifndef MODULES_VIDEO_CODING_CODECS_H264_INCLUDE_H264_GLOBALS_H_
 #define MODULES_VIDEO_CODING_CODECS_H264_INCLUDE_H264_GLOBALS_H_
 
-#include <string>
-
 namespace webrtc {
 
 // The packetization types that we support: single, aggregated, and fragmented.
@@ -42,20 +40,17 @@ enum class H264PacketizationMode {
 // This function is declared inline because it is not clear which
 // .cc file it should belong to.
 // TODO(hta): Refactor. https://bugs.webrtc.org/6842
-// TODO(jonasolsson): Use absl::string_view instead when that's available.
-inline std::string ToString(H264PacketizationMode mode) {
-  if (mode == H264PacketizationMode::NonInterleaved) {
-    return "NonInterleaved";
-  } else if (mode == H264PacketizationMode::SingleNalUnit) {
-    return "SingleNalUnit";
-  }
-  RTC_NOTREACHED();
-  return "";
-}
-
 inline std::ostream& operator<<(std::ostream& stream,
                                 H264PacketizationMode mode) {
-  return stream << ToString(mode);
+  switch (mode) {
+    case H264PacketizationMode::NonInterleaved:
+      stream << "NonInterleaved";
+      break;
+    case H264PacketizationMode::SingleNalUnit:
+      stream << "SingleNalUnit";
+      break;
+  }
+  return stream;
 }
 
 struct NaluInfo {

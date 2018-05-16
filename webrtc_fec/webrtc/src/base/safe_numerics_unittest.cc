@@ -18,13 +18,6 @@
 #pragma warning(disable : 4293)  // Invalid shift.
 #endif
 
-// This may not need to come before the base/numerics headers, but let's keep
-// it close to the MSVC equivalent.
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winteger-overflow"
-#endif
-
 #include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/numerics/safe_math.h"
@@ -1631,10 +1624,6 @@ TEST(SafeNumerics, VariadicNumericOperations) {
     EXPECT_EQ(static_cast<decltype(h)::type>(1), h);
   }
 }
-
-#if defined(__clang__)
-#pragma clang diagnostic pop  // -Winteger-overflow
-#endif
 
 }  // namespace internal
 }  // namespace base

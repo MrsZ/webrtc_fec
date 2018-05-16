@@ -37,10 +37,7 @@ class ResidualEchoDetector : public EchoDetector {
   void AnalyzeCaptureAudio(rtc::ArrayView<const float> capture_audio) override;
 
   // This function should be called while holding the capture lock.
-  void Initialize(int capture_sample_rate_hz,
-                  int num_capture_channels,
-                  int render_sample_rate_hz,
-                  int num_render_channels) override;
+  void Initialize(int sample_rate_hz, int num_channels) override;
 
   // This function is for testing purposes only.
   void SetReliabilityForTest(float value) { reliability_ = value; }

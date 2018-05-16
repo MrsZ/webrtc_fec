@@ -18,7 +18,6 @@
 #include "base/debug/debugging_buildflags.h"
 #include "base/macros.h"
 #include "base/time/time.h"
-#include "base/time/time_override.h"
 #include "base/trace_event/common/trace_event_common.h"
 #include "base/trace_event/heap_profiler.h"
 #include "base/trace_event/trace_category.h"
@@ -249,17 +248,6 @@
     INTERNAL_TRACE_EVENT_GET_CATEGORY_INFO_CUSTOM_VARIABLES(category_group, \
         INTERNAL_TRACE_EVENT_UID(atomic), \
         INTERNAL_TRACE_EVENT_UID(category_group_enabled));
-
-// Implementation detail: internal macro to return unoverridden
-// base::TimeTicks::Now(). This is important because in headless VirtualTime can
-// override base:TimeTicks::Now().
-#define INTERNAL_TRACE_TIME_TICKS_NOW() \
-  base::subtle::TimeTicksNowIgnoringOverride()
-
-// Implementation detail: internal macro to return unoverridden
-// base::Time::Now(). This is important because in headless VirtualTime can
-// override base:TimeTicks::Now().
-#define INTERNAL_TRACE_TIME_NOW() base::subtle::TimeNowIgnoringOverride()
 
 // Implementation detail: internal macro to create static category and add
 // event if the category is enabled.
@@ -890,7 +878,7 @@ static inline base::trace_event::TraceEventHandle AddTraceEvent(
     unsigned int flags,
     unsigned long long bind_id) {
   const int thread_id = static_cast<int>(base::PlatformThread::CurrentId());
-  const base::TimeTicks now = TRACE_TIME_TICKS_NOW();
+  const base::TimeTicks now = base::TimeTicks::Now();
   return AddTraceEventWithThreadIdAndTimestamp(
       phase, category_group_enabled, name, scope, id, thread_id, now, flags,
       bind_id);
@@ -931,7 +919,7 @@ static inline base::trace_event::TraceEventHandle AddTraceEvent(
     const char* arg1_name,
     const ARG1_TYPE& arg1_val) {
   int thread_id = static_cast<int>(base::PlatformThread::CurrentId());
-  base::TimeTicks now = TRACE_TIME_TICKS_NOW();
+  base::TimeTicks now = base::TimeTicks::Now();
   return AddTraceEventWithThreadIdAndTimestamp(
       phase, category_group_enabled, name, scope, id, thread_id, now, flags,
       bind_id, arg1_name, arg1_val);
@@ -949,7 +937,7 @@ static inline base::trace_event::TraceEventHandle AddTraceEvent(
     const char* arg1_name,
     std::unique_ptr<ARG1_CONVERTABLE_TYPE> arg1_val) {
   int thread_id = static_cast<int>(base::PlatformThread::CurrentId());
-  base::TimeTicks now = TRACE_TIME_TICKS_NOW();
+  base::TimeTicks now = base::TimeTicks::Now();
   return AddTraceEventWithThreadIdAndTimestamp(
       phase, category_group_enabled, name, scope, id, thread_id, now, flags,
       bind_id, arg1_name, std::move(arg1_val));
@@ -996,7 +984,7 @@ static inline base::trace_event::TraceEventHandle AddTraceEvent(
     const char* arg2_name,
     const ARG2_TYPE& arg2_val) {
   int thread_id = static_cast<int>(base::PlatformThread::CurrentId());
-  base::TimeTicks now = TRACE_TIME_TICKS_NOW();
+  base::TimeTicks now = base::TimeTicks::Now();
   return AddTraceEventWithThreadIdAndTimestamp(
       phase, category_group_enabled, name, scope, id, thread_id, now, flags,
       bind_id, arg1_name, std::move(arg1_val), arg2_name, arg2_val);
@@ -1016,7 +1004,7 @@ static inline base::trace_event::TraceEventHandle AddTraceEvent(
     const char* arg2_name,
     std::unique_ptr<ARG2_CONVERTABLE_TYPE> arg2_val) {
   int thread_id = static_cast<int>(base::PlatformThread::CurrentId());
-  base::TimeTicks now = TRACE_TIME_TICKS_NOW();
+  base::TimeTicks now = base::TimeTicks::Now();
   return AddTraceEventWithThreadIdAndTimestamp(
       phase, category_group_enabled, name, scope, id, thread_id, now, flags,
       bind_id, arg1_name, arg1_val, arg2_name, std::move(arg2_val));
@@ -1036,7 +1024,7 @@ static inline base::trace_event::TraceEventHandle AddTraceEvent(
     const char* arg2_name,
     std::unique_ptr<ARG2_CONVERTABLE_TYPE> arg2_val) {
   int thread_id = static_cast<int>(base::PlatformThread::CurrentId());
-  base::TimeTicks now = TRACE_TIME_TICKS_NOW();
+  base::TimeTicks now = base::TimeTicks::Now();
   return AddTraceEventWithThreadIdAndTimestamp(
       phase, category_group_enabled, name, scope, id, thread_id, now, flags,
       bind_id, arg1_name, std::move(arg1_val), arg2_name, std::move(arg2_val));
@@ -1056,7 +1044,7 @@ static inline base::trace_event::TraceEventHandle AddTraceEvent(
     const char* arg2_name,
     const ARG2_TYPE& arg2_val) {
   int thread_id = static_cast<int>(base::PlatformThread::CurrentId());
-  base::TimeTicks now = TRACE_TIME_TICKS_NOW();
+  base::TimeTicks now = base::TimeTicks::Now();
   return AddTraceEventWithThreadIdAndTimestamp(
       phase, category_group_enabled, name, scope, id, thread_id, now, flags,
       bind_id, arg1_name, arg1_val, arg2_name, arg2_val);

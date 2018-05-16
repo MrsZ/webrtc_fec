@@ -861,7 +861,7 @@ TEST(OptionalTest, TestMoveValue) {
   {
     Optional<Logger> x(Logger(42));
     log->push_back("---");
-    Logger moved = std::move(x.value());
+    Logger moved = x.MoveValue();
     log->push_back("---");
   }
   EXPECT_EQ(

@@ -148,8 +148,6 @@ class IntervalRange {
     return min_ == o.min_ && max_ == o.max_;
   }
 
-  bool operator!=(const IntervalRange& o) const { return !operator==(o); }
-
  private:
   int min_;
   int max_;

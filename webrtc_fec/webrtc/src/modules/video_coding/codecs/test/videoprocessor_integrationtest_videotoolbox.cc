@@ -12,8 +12,6 @@
 
 #include <vector>
 
-#include "media/base/mediaconstants.h"
-#include "modules/video_coding/codecs/test/objc_codec_factory_helper.h"
 #include "test/field_trial.h"
 #include "test/testsupport/fileutils.h"
 
@@ -35,64 +33,43 @@ class VideoProcessorIntegrationTestVideoToolbox
     config_.hw_decoder = true;
     config_.encoded_frame_checker = &h264_keyframe_checker_;
   }
-
-  std::unique_ptr<VideoDecoderFactory> CreateDecoderFactory() override {
-    if (config_.hw_decoder) {
-      EXPECT_EQ(kVideoCodecH264, config_.codec_settings.codecType)
-          << "iOS HW codecs only support H264.";
-      return CreateObjCDecoderFactory();
-    }
-    RTC_NOTREACHED() << "Only support HW decoder on iOS.";
-    return nullptr;
-  }
-
-  std::unique_ptr<VideoEncoderFactory> CreateEncoderFactory() override {
-    if (config_.hw_encoder) {
-      EXPECT_EQ(kVideoCodecH264, config_.codec_settings.codecType)
-          << "iOS HW codecs only support H264.";
-      return CreateObjCEncoderFactory();
-    }
-    RTC_NOTREACHED() << "Only support HW encoder on iOS.";
-    return nullptr;
-  }
 };
 
-// TODO(webrtc:9099): Disabled until the issue is fixed.
-// HW codecs don't work on simulators. Only run these tests on device.
-// #if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
-// #define MAYBE_TEST_F TEST_F
-// #else
-#define MAYBE_TEST_F(s, name) TEST_F(s, DISABLED_##name)
-// #endif
+// Since we don't currently run the iOS tests on physical devices on the bots,
+// the tests are disabled.
 
-// TODO(kthelgason): Use RC Thresholds when the internal bitrateAdjuster is no
-// longer in use.
-MAYBE_TEST_F(VideoProcessorIntegrationTestVideoToolbox,
-       ForemanCif500kbpsH264CBP) {
-  config_.SetCodecSettings(cricket::kH264CodecName, 1, 1, 1, false, false,
-                           false, 352, 288);
+TEST_F(VideoProcessorIntegrationTestVideoToolbox,
+       DISABLED_ForemanCif500kbpsH264CBP) {
+  config_.SetCodecSettings(kVideoCodecH264, 1, 1, 1, false, false, false, false,
+                           352, 288);
 
   std::vector<RateProfile> rate_profiles = {{500, 30, kForemanNumFrames}};
 
-  std::vector<QualityThresholds> quality_thresholds = {{33, 29, 0.9, 0.82}};
+  std::vector<RateControlThresholds> rc_thresholds = {
+      {5, 1, 0, 0.1, 0.2, 0.1, 0, 1}};
 
-  ProcessFramesAndMaybeVerify(rate_profiles, nullptr,
+  std::vector<QualityThresholds> quality_thresholds = {{37, 35, 0.93, 0.91}};
+
+  ProcessFramesAndMaybeVerify(rate_profiles, &rc_thresholds,
                               &quality_thresholds, nullptr, nullptr);
 }
 
-MAYBE_TEST_F(VideoProcessorIntegrationTestVideoToolbox,
-       ForemanCif500kbpsH264CHP) {
+TEST_F(VideoProcessorIntegrationTestVideoToolbox,
+       DISABLED_ForemanCif500kbpsH264CHP) {
   ScopedFieldTrials override_field_trials("WebRTC-H264HighProfile/Enabled/");
 
   config_.h264_codec_settings.profile = H264::kProfileConstrainedHigh;
-  config_.SetCodecSettings(cricket::kH264CodecName, 1, 1, 1, false, false,
-                           false, 352, 288);
+  config_.SetCodecSettings(kVideoCodecH264, 1, 1, 1, false, false, false, false,
+                           352, 288);
 
   std::vector<RateProfile> rate_profiles = {{500, 30, kForemanNumFrames}};
 
-  std::vector<QualityThresholds> quality_thresholds = {{33, 30, 0.91, 0.83}};
+  std::vector<RateControlThresholds> rc_thresholds = {
+      {5, 1, 0, 0.1, 0.2, 0.1, 0, 1}};
 
-  ProcessFramesAndMaybeVerify(rate_profiles, nullptr,
+  std::vector<QualityThresholds> quality_thresholds = {{37, 35, 0.93, 0.91}};
+
+  ProcessFramesAndMaybeVerify(rate_profiles, &rc_thresholds,
                               &quality_thresholds, nullptr, nullptr);
 }
 

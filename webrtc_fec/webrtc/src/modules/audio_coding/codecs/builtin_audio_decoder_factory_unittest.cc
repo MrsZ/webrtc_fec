@@ -19,8 +19,7 @@ TEST(AudioDecoderFactoryTest, CreateUnknownDecoder) {
   rtc::scoped_refptr<AudioDecoderFactory> adf =
       CreateBuiltinAudioDecoderFactory();
   ASSERT_TRUE(adf);
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("rey", 8000, 1), rtc::nullopt));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("rey", 8000, 1)));
 }
 
 TEST(AudioDecoderFactoryTest, CreatePcmu) {
@@ -28,16 +27,11 @@ TEST(AudioDecoderFactoryTest, CreatePcmu) {
       CreateBuiltinAudioDecoderFactory();
   ASSERT_TRUE(adf);
   // PCMu supports 8 kHz, and any number of channels.
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("pcmu", 8000, 0), rtc::nullopt));
-  EXPECT_TRUE(
-      adf->MakeAudioDecoder(SdpAudioFormat("pcmu", 8000, 1), rtc::nullopt));
-  EXPECT_TRUE(
-      adf->MakeAudioDecoder(SdpAudioFormat("pcmu", 8000, 2), rtc::nullopt));
-  EXPECT_TRUE(
-      adf->MakeAudioDecoder(SdpAudioFormat("pcmu", 8000, 3), rtc::nullopt));
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("pcmu", 16000, 1), rtc::nullopt));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("pcmu", 8000, 0)));
+  EXPECT_TRUE(adf->MakeAudioDecoder(SdpAudioFormat("pcmu", 8000, 1)));
+  EXPECT_TRUE(adf->MakeAudioDecoder(SdpAudioFormat("pcmu", 8000, 2)));
+  EXPECT_TRUE(adf->MakeAudioDecoder(SdpAudioFormat("pcmu", 8000, 3)));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("pcmu", 16000, 1)));
 }
 
 TEST(AudioDecoderFactoryTest, CreatePcma) {
@@ -45,16 +39,11 @@ TEST(AudioDecoderFactoryTest, CreatePcma) {
       CreateBuiltinAudioDecoderFactory();
   ASSERT_TRUE(adf);
   // PCMa supports 8 kHz, and any number of channels.
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("pcma", 8000, 0), rtc::nullopt));
-  EXPECT_TRUE(
-      adf->MakeAudioDecoder(SdpAudioFormat("pcma", 8000, 1), rtc::nullopt));
-  EXPECT_TRUE(
-      adf->MakeAudioDecoder(SdpAudioFormat("pcma", 8000, 2), rtc::nullopt));
-  EXPECT_TRUE(
-      adf->MakeAudioDecoder(SdpAudioFormat("pcma", 8000, 3), rtc::nullopt));
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("pcma", 16000, 1), rtc::nullopt));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("pcma", 8000, 0)));
+  EXPECT_TRUE(adf->MakeAudioDecoder(SdpAudioFormat("pcma", 8000, 1)));
+  EXPECT_TRUE(adf->MakeAudioDecoder(SdpAudioFormat("pcma", 8000, 2)));
+  EXPECT_TRUE(adf->MakeAudioDecoder(SdpAudioFormat("pcma", 8000, 3)));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("pcma", 16000, 1)));
 }
 
 TEST(AudioDecoderFactoryTest, CreateIlbc) {
@@ -62,16 +51,12 @@ TEST(AudioDecoderFactoryTest, CreateIlbc) {
       CreateBuiltinAudioDecoderFactory();
   ASSERT_TRUE(adf);
   // iLBC supports 8 kHz, 1 channel.
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("ilbc", 8000, 0), rtc::nullopt));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("ilbc", 8000, 0)));
 #ifdef WEBRTC_CODEC_ILBC
-  EXPECT_TRUE(
-      adf->MakeAudioDecoder(SdpAudioFormat("ilbc", 8000, 1), rtc::nullopt));
+  EXPECT_TRUE(adf->MakeAudioDecoder(SdpAudioFormat("ilbc", 8000, 1)));
 #endif
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("ilbc", 8000, 2), rtc::nullopt));
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("ilbc", 16000, 1), rtc::nullopt));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("ilbc", 8000, 2)));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("ilbc", 16000, 1)));
 }
 
 TEST(AudioDecoderFactoryTest, CreateIsac) {
@@ -80,22 +65,15 @@ TEST(AudioDecoderFactoryTest, CreateIsac) {
   ASSERT_TRUE(adf);
   // iSAC supports 16 kHz, 1 channel. The float implementation additionally
   // supports 32 kHz, 1 channel.
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("isac", 16000, 0), rtc::nullopt));
-  EXPECT_TRUE(
-      adf->MakeAudioDecoder(SdpAudioFormat("isac", 16000, 1), rtc::nullopt));
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("isac", 16000, 2), rtc::nullopt));
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("isac", 8000, 1), rtc::nullopt));
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("isac", 48000, 1), rtc::nullopt));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("isac", 16000, 0)));
+  EXPECT_TRUE(adf->MakeAudioDecoder(SdpAudioFormat("isac", 16000, 1)));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("isac", 16000, 2)));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("isac", 8000, 1)));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("isac", 48000, 1)));
 #ifdef WEBRTC_ARCH_ARM
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("isac", 32000, 1), rtc::nullopt));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("isac", 32000, 1)));
 #else
-  EXPECT_TRUE(
-      adf->MakeAudioDecoder(SdpAudioFormat("isac", 32000, 1), rtc::nullopt));
+  EXPECT_TRUE(adf->MakeAudioDecoder(SdpAudioFormat("isac", 32000, 1)));
 #endif
 }
 
@@ -107,11 +85,10 @@ TEST(AudioDecoderFactoryTest, CreateL16) {
   const int clockrates[] = {8000, 16000, 32000, 48000};
   const int num_channels[] = {1, 2, 3, 4711};
   for (int clockrate : clockrates) {
-    EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("l16", clockrate, 0),
-                                       rtc::nullopt));
+    EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("l16", clockrate, 0)));
     for (int channels : num_channels) {
-      EXPECT_TRUE(adf->MakeAudioDecoder(
-          SdpAudioFormat("l16", clockrate, channels), rtc::nullopt));
+      EXPECT_TRUE(
+          adf->MakeAudioDecoder(SdpAudioFormat("l16", clockrate, channels)));
     }
   }
 }
@@ -121,22 +98,16 @@ TEST(AudioDecoderFactoryTest, CreateG722) {
       CreateBuiltinAudioDecoderFactory();
   ASSERT_TRUE(adf);
   // g722 supports 8 kHz, 1-2 channels.
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("g722", 8000, 0), rtc::nullopt));
-  EXPECT_TRUE(
-      adf->MakeAudioDecoder(SdpAudioFormat("g722", 8000, 1), rtc::nullopt));
-  EXPECT_TRUE(
-      adf->MakeAudioDecoder(SdpAudioFormat("g722", 8000, 2), rtc::nullopt));
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("g722", 8000, 3), rtc::nullopt));
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("g722", 16000, 1), rtc::nullopt));
-  EXPECT_FALSE(
-      adf->MakeAudioDecoder(SdpAudioFormat("g722", 32000, 1), rtc::nullopt));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("g722", 8000, 0)));
+  EXPECT_TRUE(adf->MakeAudioDecoder(SdpAudioFormat("g722", 8000, 1)));
+  EXPECT_TRUE(adf->MakeAudioDecoder(SdpAudioFormat("g722", 8000, 2)));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("g722", 8000, 3)));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("g722", 16000, 1)));
+  EXPECT_FALSE(adf->MakeAudioDecoder(SdpAudioFormat("g722", 32000, 1)));
 
   // g722 actually uses a 16 kHz sample rate instead of the nominal 8 kHz.
   std::unique_ptr<AudioDecoder> dec =
-      adf->MakeAudioDecoder(SdpAudioFormat("g722", 8000, 1), rtc::nullopt);
+      adf->MakeAudioDecoder(SdpAudioFormat("g722", 8000, 1));
   EXPECT_EQ(16000, dec->SampleRateHz());
 }
 
@@ -155,10 +126,8 @@ TEST(AudioDecoderFactoryTest, CreateOpus) {
         }
         const bool good = (hz == 48000 && channels == 2 &&
                            (stereo == "XX" || stereo == "0" || stereo == "1"));
-        EXPECT_EQ(good,
-                  static_cast<bool>(adf->MakeAudioDecoder(
-                      SdpAudioFormat("opus", hz, channels, std::move(params)),
-                      rtc::nullopt)));
+        EXPECT_EQ(good, static_cast<bool>(adf->MakeAudioDecoder(SdpAudioFormat(
+                            "opus", hz, channels, std::move(params)))));
       }
     }
   }

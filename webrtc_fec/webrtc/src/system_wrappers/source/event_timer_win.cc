@@ -10,7 +10,7 @@
 
 #include "system_wrappers/source/event_timer_win.h"
 
-#include "mmsystem.h"
+#include "Mmsystem.h"
 
 namespace webrtc {
 

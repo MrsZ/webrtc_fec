@@ -30,8 +30,7 @@
 namespace webrtc {
 
 std::string AudioReceiveStream::Config::Rtp::ToString() const {
-  char ss_buf[1024];
-  rtc::SimpleStringBuilder ss(ss_buf);
+  rtc::SimpleStringBuilder<1024> ss;
   ss << "{remote_ssrc: " << remote_ssrc;
   ss << ", local_ssrc: " << local_ssrc;
   ss << ", transport_cc: " << (transport_cc ? "on" : "off");
@@ -49,8 +48,7 @@ std::string AudioReceiveStream::Config::Rtp::ToString() const {
 }
 
 std::string AudioReceiveStream::Config::ToString() const {
-  char ss_buf[1024];
-  rtc::SimpleStringBuilder ss(ss_buf);
+  rtc::SimpleStringBuilder<1024> ss;
   ss << "{rtp: " << rtp.ToString();
   ss << ", rtcp_send_transport: "
      << (rtcp_send_transport ? "(Transport)" : "null");
@@ -70,12 +68,13 @@ std::unique_ptr<voe::ChannelProxy> CreateChannelAndProxy(
   RTC_DCHECK(audio_state);
   internal::AudioState* internal_audio_state =
       static_cast<internal::AudioState*>(audio_state);
-  return std::unique_ptr<voe::ChannelProxy>(
-      new voe::ChannelProxy(std::unique_ptr<voe::Channel>(new voe::Channel(
-          module_process_thread, internal_audio_state->audio_device_module(),
-          nullptr /* RtcpRttStats */, config.jitter_buffer_max_packets,
-          config.jitter_buffer_fast_accelerate, config.decoder_factory,
-          config.codec_pair_id))));
+  return std::unique_ptr<voe::ChannelProxy>(new voe::ChannelProxy(
+      std::unique_ptr<voe::Channel>(new voe::Channel(
+              module_process_thread,
+              internal_audio_state->audio_device_module(),
+              config.jitter_buffer_max_packets,
+              config.jitter_buffer_fast_accelerate,
+              config.decoder_factory))));
 }
 }  // namespace
 

@@ -59,6 +59,11 @@ class SparseHistogramTest : public testing::TestWithParam<bool> {
   }
 
   void CreatePersistentMemoryAllocator() {
+    // By getting the results-histogram before any persistent allocator
+    // is attached, that histogram is guaranteed not to be stored in
+    // any persistent memory segment (which simplifies some tests).
+    GlobalHistogramAllocator::GetCreateHistogramResultHistogram();
+
     GlobalHistogramAllocator::CreateWithLocalMemory(
         kAllocatorMemorySize, 0, "SparseHistogramAllocatorTest");
     allocator_ = GlobalHistogramAllocator::Get()->memory_allocator();

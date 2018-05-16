@@ -82,8 +82,7 @@ class TaskSchedulerWorkerTest : public testing::TestWithParam<size_t> {
   void SetUp() override {
     worker_ = MakeRefCounted<SchedulerWorker>(
         ThreadPriority::NORMAL,
-        std::make_unique<TestSchedulerWorkerDelegate>(this),
-        task_tracker_.GetTrackedRef());
+        std::make_unique<TestSchedulerWorkerDelegate>(this), &task_tracker_);
     ASSERT_TRUE(worker_);
     worker_->Start();
     worker_set_.Signal();
@@ -91,10 +90,7 @@ class TaskSchedulerWorkerTest : public testing::TestWithParam<size_t> {
   }
 
   void TearDown() override {
-    // |worker_| needs to be released before ~TaskTracker() as it holds a
-    // TrackedRef to it.
     worker_->JoinForTesting();
-    worker_ = nullptr;
   }
 
   size_t TasksPerSequence() const { return GetParam(); }
@@ -524,9 +520,8 @@ TEST(TaskSchedulerWorkerTest, WorkerCleanupFromGetWork) {
       delegate->controls();
   controls->set_can_cleanup(true);
   EXPECT_CALL(*delegate, OnMainEntry(_));
-  auto worker = MakeRefCounted<SchedulerWorker>(ThreadPriority::NORMAL,
-                                                WrapUnique(delegate),
-                                                task_tracker.GetTrackedRef());
+  auto worker = MakeRefCounted<SchedulerWorker>(
+      ThreadPriority::NORMAL, WrapUnique(delegate), &task_tracker);
   worker->Start();
   worker->WakeUp();
   controls->WaitForWorkToRun();
@@ -546,9 +541,8 @@ TEST(TaskSchedulerWorkerTest, WorkerCleanupDuringWork) {
 
   controls->HaveWorkBlock();
 
-  auto worker = MakeRefCounted<SchedulerWorker>(ThreadPriority::NORMAL,
-                                                std::move(delegate),
-                                                task_tracker.GetTrackedRef());
+  auto worker = MakeRefCounted<SchedulerWorker>(
+      ThreadPriority::NORMAL, std::move(delegate), &task_tracker);
   worker->Start();
   worker->WakeUp();
 
@@ -569,9 +563,8 @@ TEST(TaskSchedulerWorkerTest, WorkerCleanupDuringWait) {
   scoped_refptr<ControllableCleanupDelegate::Controls> controls =
       delegate->controls();
 
-  auto worker = MakeRefCounted<SchedulerWorker>(ThreadPriority::NORMAL,
-                                                std::move(delegate),
-                                                task_tracker.GetTrackedRef());
+  auto worker = MakeRefCounted<SchedulerWorker>(
+      ThreadPriority::NORMAL, std::move(delegate), &task_tracker);
   worker->Start();
   worker->WakeUp();
 
@@ -593,9 +586,8 @@ TEST(TaskSchedulerWorkerTest, WorkerCleanupDuringShutdown) {
 
   controls->HaveWorkBlock();
 
-  auto worker = MakeRefCounted<SchedulerWorker>(ThreadPriority::NORMAL,
-                                                std::move(delegate),
-                                                task_tracker.GetTrackedRef());
+  auto worker = MakeRefCounted<SchedulerWorker>(
+      ThreadPriority::NORMAL, std::move(delegate), &task_tracker);
   worker->Start();
   worker->WakeUp();
 
@@ -619,9 +611,8 @@ TEST(TaskSchedulerWorkerTest, CleanupBeforeStart) {
       delegate->controls();
   controls->set_expect_get_work(false);
 
-  auto worker = MakeRefCounted<SchedulerWorker>(ThreadPriority::NORMAL,
-                                                std::move(delegate),
-                                                task_tracker.GetTrackedRef());
+  auto worker = MakeRefCounted<SchedulerWorker>(
+      ThreadPriority::NORMAL, std::move(delegate), &task_tracker);
 
   worker->Cleanup();
   worker->Start();
@@ -669,9 +660,8 @@ TEST(TaskSchedulerWorkerTest, WorkerCleanupDuringJoin) {
 
   controls->HaveWorkBlock();
 
-  auto worker = MakeRefCounted<SchedulerWorker>(ThreadPriority::NORMAL,
-                                                std::move(delegate),
-                                                task_tracker.GetTrackedRef());
+  auto worker = MakeRefCounted<SchedulerWorker>(
+      ThreadPriority::NORMAL, std::move(delegate), &task_tracker);
   worker->Start();
   worker->WakeUp();
 
@@ -749,9 +739,8 @@ TEST(TaskSchedulerWorkerTest, BumpPriorityOfAliveThreadDuringShutdown) {
           ? ThreadPriority::BACKGROUND
           : ThreadPriority::NORMAL);
 
-  auto worker = MakeRefCounted<SchedulerWorker>(ThreadPriority::BACKGROUND,
-                                                std::move(delegate),
-                                                task_tracker.GetTrackedRef());
+  auto worker = MakeRefCounted<SchedulerWorker>(
+      ThreadPriority::BACKGROUND, std::move(delegate), &task_tracker);
   worker->Start();
 
   // Verify that the initial thread priority is BACKGROUND (or NORMAL if thread
@@ -811,8 +800,8 @@ TEST(TaskSchedulerWorkerTest, BackwardCompatibilityEnabled) {
   // Create a worker with backward compatibility ENABLED. Wake it up and wait
   // until GetWork() returns.
   auto worker = MakeRefCounted<SchedulerWorker>(
-      ThreadPriority::NORMAL, std::move(delegate), task_tracker.GetTrackedRef(),
-      nullptr, SchedulerBackwardCompatibility::INIT_COM_STA);
+      ThreadPriority::NORMAL, std::move(delegate), &task_tracker, nullptr,
+      SchedulerBackwardCompatibility::INIT_COM_STA);
   worker->Start();
   worker->WakeUp();
   delegate_raw->WaitUntilGetWorkReturned();
@@ -838,8 +827,8 @@ TEST(TaskSchedulerWorkerTest, BackwardCompatibilityDisabled) {
   // Create a worker with backward compatibility DISABLED. Wake it up and wait
   // until GetWork() returns.
   auto worker = MakeRefCounted<SchedulerWorker>(
-      ThreadPriority::NORMAL, std::move(delegate), task_tracker.GetTrackedRef(),
-      nullptr, SchedulerBackwardCompatibility::DISABLED);
+      ThreadPriority::NORMAL, std::move(delegate), &task_tracker, nullptr,
+      SchedulerBackwardCompatibility::DISABLED);
   worker->Start();
   worker->WakeUp();
   delegate_raw->WaitUntilGetWorkReturned();

@@ -14,6 +14,11 @@
 #include <unistd.h>
 #endif
 
+#if defined(WEBRTC_WIN)
+// Must be included first before openssl headers.
+#include "rtc_base/win32.h"  // NOLINT
+#endif  // WEBRTC_WIN
+
 #include <openssl/bio.h>
 #include <openssl/crypto.h>
 #include <openssl/err.h>
@@ -21,14 +26,12 @@
 #include <openssl/rand.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
-#include "rtc_base/openssl.h"
 
 #include "rtc_base/arraysize.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
-#include "rtc_base/opensslcommon.h"
-#include "rtc_base/ptr_util.h"
+#include "rtc_base/openssl.h"
 #include "rtc_base/sslroots.h"
 #include "rtc_base/stringencode.h"
 #include "rtc_base/stringutils.h"
@@ -202,9 +205,9 @@ bool OpenSSLAdapter::CleanupSSL() {
 }
 
 OpenSSLAdapter::OpenSSLAdapter(AsyncSocket* socket,
-                               OpenSSLSessionCache* ssl_session_cache)
+                               OpenSSLAdapterFactory* factory)
     : SSLAdapter(socket),
-      ssl_session_cache_(ssl_session_cache),
+      factory_(factory),
       state_(SSL_NONE),
       role_(SSL_CLIENT),
       ssl_read_needs_write_(false),
@@ -218,8 +221,8 @@ OpenSSLAdapter::OpenSSLAdapter(AsyncSocket* socket,
   // If a factory is used, take a reference on the factory's SSL_CTX.
   // Otherwise, we'll create our own later.
   // Either way, we'll release our reference via SSL_CTX_free() in Cleanup().
-  if (ssl_session_cache_ != nullptr) {
-    ssl_ctx_ = ssl_session_cache_->GetSSLContext();
+  if (factory_) {
+    ssl_ctx_ = factory_->ssl_ctx();
     RTC_DCHECK(ssl_ctx_);
     // Note: if using OpenSSL, requires version 1.1.0 or later.
     SSL_CTX_up_ref(ssl_ctx_);
@@ -303,7 +306,7 @@ int OpenSSLAdapter::BeginSSL() {
   // First set up the context. We should either have a factory, with its own
   // pre-existing context, or be running standalone, in which case we will
   // need to create one, and specify |false| to disable session caching.
-  if (ssl_session_cache_ == nullptr) {
+  if (!factory_) {
     RTC_DCHECK(!ssl_ctx_);
     ssl_ctx_ = CreateContext(ssl_mode_, false);
   }
@@ -348,8 +351,8 @@ int OpenSSLAdapter::BeginSSL() {
     SSL_set_tlsext_host_name(ssl_, ssl_host_name_.c_str());
 
     // Enable session caching, if configured and a hostname is supplied.
-    if (ssl_session_cache_ != nullptr) {
-      SSL_SESSION* cached = ssl_session_cache_->LookupSession(ssl_host_name_);
+    if (factory_) {
+      SSL_SESSION* cached = factory_->LookupSession(ssl_host_name_);
       if (cached) {
         if (SSL_set_session(ssl_, cached) == 0) {
           RTC_LOG(LS_WARNING) << "Failed to apply SSL session from cache";
@@ -411,7 +414,7 @@ int OpenSSLAdapter::ContinueSSL() {
   int code = (role_ == SSL_CLIENT) ? SSL_connect(ssl_) : SSL_accept(ssl_);
   switch (SSL_get_error(ssl_, code)) {
   case SSL_ERROR_NONE:
-    if (!SSLPostConnectionCheck(ssl_, ssl_host_name_)) {
+    if (!SSLPostConnectionCheck(ssl_, ssl_host_name_.c_str())) {
       RTC_LOG(LS_ERROR) << "TLS post connection check failed";
       // make sure we close the socket
       Cleanup();
@@ -611,6 +614,7 @@ int OpenSSLAdapter::SendTo(const void* pv,
 
 int OpenSSLAdapter::Recv(void* pv, size_t cb, int64_t* timestamp) {
   switch (state_) {
+
   case SSL_NONE:
     return AsyncSocketAdapter::Recv(pv, cb, timestamp);
 
@@ -786,18 +790,96 @@ void OpenSSLAdapter::OnCloseEvent(AsyncSocket* socket, int err) {
   AsyncSocketAdapter::OnCloseEvent(socket, err);
 }
 
-bool OpenSSLAdapter::SSLPostConnectionCheck(SSL* ssl, const std::string& host) {
-  bool is_valid_cert_name = openssl::VerifyPeerCertMatchesHost(ssl, host) &&
-                            (SSL_get_verify_result(ssl) == X509_V_OK ||
-                             custom_verification_succeeded_);
+bool OpenSSLAdapter::VerifyServerName(SSL* ssl, const char* host,
+                                      bool ignore_bad_cert) {
+  if (!host)
+    return false;
 
-  if (!is_valid_cert_name && ignore_bad_cert_) {
-    RTC_DLOG(LS_WARNING) << "Other TLS post connection checks failed."
-                            "ignore_bad_cert_ set to true. Overriding name "
-                            "verification failure!";
-    is_valid_cert_name = true;
+  // Checking the return from SSL_get_peer_certificate here is not strictly
+  // necessary.  With our setup, it is not possible for it to return
+  // null.  However, it is good form to check the return.
+  X509* certificate = SSL_get_peer_certificate(ssl);
+  if (!certificate)
+    return false;
+
+  // Logging certificates is extremely verbose. So it is disabled by default.
+#ifdef LOG_CERTIFICATES
+  {
+    RTC_DLOG(LS_INFO) << "Certificate from server:";
+    BIO* mem = BIO_new(BIO_s_mem());
+    X509_print_ex(mem, certificate, XN_FLAG_SEP_CPLUS_SPC, X509_FLAG_NO_HEADER);
+    BIO_write(mem, "\0", 1);
+    char* buffer;
+    BIO_get_mem_data(mem, &buffer);
+    RTC_DLOG(LS_INFO) << buffer;
+    BIO_free(mem);
+
+    char* cipher_description =
+        SSL_CIPHER_description(SSL_get_current_cipher(ssl), nullptr, 128);
+    RTC_DLOG(LS_INFO) << "Cipher: " << cipher_description;
+    OPENSSL_free(cipher_description);
   }
-  return is_valid_cert_name;
+#endif
+
+  bool ok = false;
+  GENERAL_NAMES* names = reinterpret_cast<GENERAL_NAMES*>(
+      X509_get_ext_d2i(certificate, NID_subject_alt_name, nullptr, nullptr));
+  if (names) {
+    for (size_t i = 0; i < static_cast<size_t>(sk_GENERAL_NAME_num(names));
+         i++) {
+      const GENERAL_NAME* name = sk_GENERAL_NAME_value(names, i);
+      if (name->type != GEN_DNS)
+        continue;
+      std::string value(
+          reinterpret_cast<const char*>(ASN1_STRING_data(name->d.dNSName)),
+          ASN1_STRING_length(name->d.dNSName));
+      // string_match takes NUL-terminated strings, so check for embedded NULs.
+      if (value.find('\0') != std::string::npos)
+        continue;
+      if (string_match(host, value.c_str())) {
+        ok = true;
+        break;
+      }
+    }
+    GENERAL_NAMES_free(names);
+  }
+
+  char data[256];
+  X509_NAME* subject;
+  if (!ok && ((subject = X509_get_subject_name(certificate)) != nullptr) &&
+      (X509_NAME_get_text_by_NID(subject, NID_commonName, data, sizeof(data)) >
+       0)) {
+    data[sizeof(data)-1] = 0;
+    if (_stricmp(data, host) == 0)
+      ok = true;
+  }
+
+  X509_free(certificate);
+
+  // This should only ever be turned on for debugging and development.
+  if (!ok && ignore_bad_cert) {
+    RTC_DLOG(LS_WARNING) << "TLS certificate check FAILED.  "
+                         << "Allowing connection anyway.";
+    ok = true;
+  }
+
+  return ok;
+}
+
+bool OpenSSLAdapter::SSLPostConnectionCheck(SSL* ssl, const char* host) {
+  bool ok = VerifyServerName(ssl, host, ignore_bad_cert_);
+
+  if (ok) {
+    ok = (SSL_get_verify_result(ssl) == X509_V_OK ||
+          custom_verification_succeeded_);
+  }
+
+  if (!ok && ignore_bad_cert_) {
+    RTC_DLOG(LS_INFO) << "Other TLS post connection checks failed.";
+    ok = true;
+  }
+
+  return ok;
 }
 
 #if !defined(NDEBUG)
@@ -878,9 +960,9 @@ int OpenSSLAdapter::SSLVerifyCallback(int ok, X509_STORE_CTX* store) {
 int OpenSSLAdapter::NewSSLSessionCallback(SSL* ssl, SSL_SESSION* session) {
   OpenSSLAdapter* stream =
       reinterpret_cast<OpenSSLAdapter*>(SSL_get_app_data(ssl));
-  RTC_DCHECK(stream->ssl_session_cache_);
+  RTC_DCHECK(stream->factory_);
   RTC_LOG(LS_INFO) << "Caching SSL session for " << stream->ssl_host_name_;
-  stream->ssl_session_cache_->AddSession(stream->ssl_host_name_, session);
+  stream->factory_->AddSession(stream->ssl_host_name_, session);
   return 1;  // We've taken ownership of the session; OpenSSL shouldn't free it.
 }
 
@@ -979,26 +1061,43 @@ std::string TransformAlpnProtocols(
 // OpenSSLAdapterFactory
 //////////////////////////////////////////////////////////////////////
 
-OpenSSLAdapterFactory::OpenSSLAdapterFactory() = default;
-OpenSSLAdapterFactory::~OpenSSLAdapterFactory() = default;
+OpenSSLAdapterFactory::OpenSSLAdapterFactory()
+    : ssl_mode_(SSL_MODE_TLS), ssl_ctx_(nullptr) {}
+
+OpenSSLAdapterFactory::~OpenSSLAdapterFactory() {
+  for (auto it : sessions_) {
+    SSL_SESSION_free(it.second);
+  }
+  SSL_CTX_free(ssl_ctx_);
+}
 
 void OpenSSLAdapterFactory::SetMode(SSLMode mode) {
-  RTC_DCHECK(!ssl_session_cache_);
+  RTC_DCHECK(!ssl_ctx_);
   ssl_mode_ = mode;
 }
 
 OpenSSLAdapter* OpenSSLAdapterFactory::CreateAdapter(AsyncSocket* socket) {
-  if (ssl_session_cache_ == nullptr) {
-    SSL_CTX* ssl_ctx =
-        OpenSSLAdapter::CreateContext(ssl_mode_, /* enable_cache = */ true);
-    if (ssl_ctx == nullptr) {
+  if (!ssl_ctx_) {
+    bool enable_cache = true;
+    ssl_ctx_ = OpenSSLAdapter::CreateContext(ssl_mode_, enable_cache);
+    if (!ssl_ctx_) {
       return nullptr;
     }
-    // The OpenSSLSessionCache will upref the ssl_ctx.
-    ssl_session_cache_ = MakeUnique<OpenSSLSessionCache>(ssl_mode_, ssl_ctx);
-    SSL_CTX_free(ssl_ctx);
   }
-  return new OpenSSLAdapter(socket, ssl_session_cache_.get());
+
+  return new OpenSSLAdapter(socket, this);
 }
 
-}  // namespace rtc
+SSL_SESSION* OpenSSLAdapterFactory::LookupSession(const std::string& hostname) {
+  auto it = sessions_.find(hostname);
+  return (it != sessions_.end()) ? it->second : nullptr;
+}
+
+void OpenSSLAdapterFactory::AddSession(const std::string& hostname,
+                                       SSL_SESSION* new_session) {
+  SSL_SESSION* old_session = LookupSession(hostname);
+  SSL_SESSION_free(old_session);
+  sessions_[hostname] = new_session;
+}
+
+} // namespace rtc

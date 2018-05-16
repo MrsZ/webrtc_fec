@@ -554,7 +554,8 @@ bool operator==(const Value& lhs, const Value& rhs) {
         return false;
       return std::equal(std::begin(lhs.dict_), std::end(lhs.dict_),
                         std::begin(rhs.dict_),
-                        [](const auto& u, const auto& v) {
+                        [](const Value::DictStorage::value_type& u,
+                           const Value::DictStorage::value_type& v) {
                           return std::tie(u.first, *u.second) ==
                                  std::tie(v.first, *v.second);
                         });

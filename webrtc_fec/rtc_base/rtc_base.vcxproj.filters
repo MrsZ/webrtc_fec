@@ -39,9 +39,6 @@
     <ClCompile Include="..\webrtc\src\rtc_base\stringencode.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\webrtc\src\rtc_base\strings\string_builder.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\webrtc\src\rtc_base\timeutils.cc">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -57,13 +54,10 @@
     <ClCompile Include="..\webrtc\src\rtc_base\platform_thread.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\webrtc\src\rtc_base\synchronization\rw_lock_win.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webrtc\src\rtc_base\synchronization\rw_lock_wrapper.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\webrtc\src\rtc_base\random.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\rtc_base\event_tracer.cc">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -123,6 +117,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\webrtc\src\rtc_base\random.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\webrtc\src\rtc_base\trace_event.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

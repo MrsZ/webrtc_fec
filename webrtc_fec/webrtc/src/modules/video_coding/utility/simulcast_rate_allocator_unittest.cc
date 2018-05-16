@@ -30,7 +30,7 @@ constexpr uint32_t kFramerateFps = 5;
 class MockTemporalLayers : public TemporalLayers {
  public:
   MOCK_METHOD1(UpdateLayerConfig, TemporalLayers::FrameConfig(uint32_t));
-  MOCK_METHOD2(OnRatesUpdated, void(const std::vector<uint32_t>&, int));
+  MOCK_METHOD3(OnRatesUpdated, std::vector<uint32_t>(int, int, int));
   MOCK_METHOD1(UpdateConfiguration, bool(Vp8EncoderConfig*));
   MOCK_METHOD4(PopulateCodecSpecific,
                void(bool,
@@ -65,8 +65,7 @@ class SimulcastRateAllocatorTest : public ::testing::TestWithParam<bool> {
   }
 
   template <size_t S>
-  void ExpectEqual(uint32_t (&expected)[S],
-                   const VideoBitrateAllocation& actual) {
+  void ExpectEqual(uint32_t (&expected)[S], const BitrateAllocation& actual) {
     // EXPECT_EQ(S, actual.size());
     uint32_t sum = 0;
     for (size_t i = 0; i < S; ++i) {
@@ -82,7 +81,23 @@ class SimulcastRateAllocatorTest : public ::testing::TestWithParam<bool> {
   }
 
   void CreateAllocator() {
-    allocator_.reset(new SimulcastRateAllocator(codec_));
+    std::unique_ptr<TemporalLayersFactory> tl_factory(GetTlFactory());
+    codec_.VP8()->tl_factory = tl_factory.get();
+    allocator_.reset(new SimulcastRateAllocator(codec_, std::move(tl_factory)));
+
+    // Simulate InitEncode().
+    tl_factories_.clear();
+    if (codec_.numberOfSimulcastStreams == 0) {
+      tl_factories_.push_back(
+          std::unique_ptr<TemporalLayers>(codec_.VP8()->tl_factory->Create(
+              0, codec_.VP8()->numberOfTemporalLayers, 0)));
+    } else {
+      for (uint32_t i = 0; i < codec_.numberOfSimulcastStreams; ++i) {
+        tl_factories_.push_back(
+            std::unique_ptr<TemporalLayers>(codec_.VP8()->tl_factory->Create(
+                i, codec_.simulcastStream[i].numberOfTemporalLayers, 0)));
+      }
+    }
   }
 
   void SetupCodecThreeSimulcastStreams(
@@ -113,7 +128,11 @@ class SimulcastRateAllocatorTest : public ::testing::TestWithParam<bool> {
     }
   }
 
-  VideoBitrateAllocation GetAllocation(uint32_t target_bitrate) {
+  virtual std::unique_ptr<TemporalLayersFactory> GetTlFactory() {
+    return std::unique_ptr<TemporalLayersFactory>(new TemporalLayersFactory());
+  }
+
+  BitrateAllocation GetAllocation(uint32_t target_bitrate) {
     return allocator_->GetAllocation(target_bitrate * 1000U, kDefaultFrameRate);
   }
 
@@ -121,6 +140,7 @@ class SimulcastRateAllocatorTest : public ::testing::TestWithParam<bool> {
   static const int kDefaultFrameRate = 30;
   VideoCodec codec_;
   std::unique_ptr<SimulcastRateAllocator> allocator_;
+  std::vector<std::unique_ptr<TemporalLayers>> tl_factories_;
 };
 
 TEST_F(SimulcastRateAllocatorTest, NoSimulcastBelowMin) {
@@ -139,7 +159,7 @@ TEST_F(SimulcastRateAllocatorTest, NoSimulcastAboveMax) {
 }
 
 TEST_F(SimulcastRateAllocatorTest, NoSimulcastNoMax) {
-  const uint32_t kMax = VideoBitrateAllocation::kMaxBitrateBps / 1000;
+  const uint32_t kMax = BitrateAllocation::kMaxBitrateBps / 1000;
   codec_.active = true;
   codec_.maxBitrate = 0;
   CreateAllocator();
@@ -465,8 +485,9 @@ TEST_F(SimulcastRateAllocatorTest, ThreeStreamsMiddleInactive) {
 
 TEST_F(SimulcastRateAllocatorTest, GetPreferredBitrateBps) {
   MockTemporalLayers mock_layers;
-  allocator_.reset(new SimulcastRateAllocator(codec_));
-  EXPECT_CALL(mock_layers, OnRatesUpdated(_, _)).Times(0);
+  allocator_.reset(new SimulcastRateAllocator(codec_, nullptr));
+  allocator_->OnTemporalLayersCreated(0, &mock_layers);
+  EXPECT_CALL(mock_layers, OnRatesUpdated(_, _, _)).Times(0);
   EXPECT_EQ(codec_.maxBitrate * 1000,
             allocator_->GetPreferredBitrateBps(codec_.maxFramerate));
 }
@@ -519,6 +540,11 @@ class ScreenshareRateAllocationTest : public SimulcastRateAllocatorTest {
       codec_.active = active;
     }
   }
+
+  std::unique_ptr<TemporalLayersFactory> GetTlFactory() override {
+    return std::unique_ptr<TemporalLayersFactory>(
+        new ScreenshareTemporalLayersFactory());
+  }
 };
 
 INSTANTIATE_TEST_CASE_P(ScreenshareTest,
@@ -529,7 +555,7 @@ TEST_P(ScreenshareRateAllocationTest, BitrateBelowTl0) {
   SetupConferenceScreenshare(GetParam());
   CreateAllocator();
 
-  VideoBitrateAllocation allocation =
+  BitrateAllocation allocation =
       allocator_->GetAllocation(kTargetBitrateKbps * 1000, kFramerateFps);
 
   // All allocation should go in TL0.
@@ -542,7 +568,7 @@ TEST_P(ScreenshareRateAllocationTest, BitrateAboveTl0) {
   CreateAllocator();
 
   uint32_t target_bitrate_kbps = (kTargetBitrateKbps + kMaxBitrateKbps) / 2;
-  VideoBitrateAllocation allocation =
+  BitrateAllocation allocation =
       allocator_->GetAllocation(target_bitrate_kbps * 1000, kFramerateFps);
 
   // Fill TL0, then put the rest in TL1.
@@ -556,7 +582,7 @@ TEST_P(ScreenshareRateAllocationTest, BitrateAboveTl1) {
   SetupConferenceScreenshare(GetParam());
   CreateAllocator();
 
-  VideoBitrateAllocation allocation =
+  BitrateAllocation allocation =
       allocator_->GetAllocation(kMaxBitrateKbps * 2000, kFramerateFps);
 
   // Fill both TL0 and TL1, but no more.
@@ -574,7 +600,7 @@ TEST_P(ScreenshareRateAllocationTest, InactiveScreenshare) {
 
   // Enough bitrate for TL0 and TL1.
   uint32_t target_bitrate_kbps = (kTargetBitrateKbps + kMaxBitrateKbps) / 2;
-  VideoBitrateAllocation allocation =
+  BitrateAllocation allocation =
       allocator_->GetAllocation(target_bitrate_kbps * 1000, kFramerateFps);
 
   EXPECT_EQ(0U, allocation.get_sum_kbps());

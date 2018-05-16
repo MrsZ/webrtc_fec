@@ -69,9 +69,8 @@ void Unmap(void* addr, size_t size) {
 
 TEST(ProcessMemoryDumpTest, MoveConstructor) {
   auto heap_state = MakeRefCounted<HeapProfilerSerializationState>();
-  heap_state->SetStackFrameDeduplicator(
-      std::make_unique<StackFrameDeduplicator>());
-  heap_state->SetTypeNameDeduplicator(std::make_unique<TypeNameDeduplicator>());
+  heap_state->SetStackFrameDeduplicator(MakeUnique<StackFrameDeduplicator>());
+  heap_state->SetTypeNameDeduplicator(MakeUnique<TypeNameDeduplicator>());
 
   ProcessMemoryDump pmd1 = ProcessMemoryDump(heap_state, kDetailedDumpArgs);
   pmd1.CreateAllocatorDump("mad1");
@@ -89,16 +88,15 @@ TEST(ProcessMemoryDumpTest, MoveConstructor) {
   EXPECT_EQ(heap_state.get(), pmd2.heap_profiler_serialization_state().get());
 
   // Check that calling serialization routines doesn't cause a crash.
-  auto traced_value = std::make_unique<TracedValue>();
+  auto traced_value = MakeUnique<TracedValue>();
   pmd2.SerializeAllocatorDumpsInto(traced_value.get());
   pmd2.SerializeHeapProfilerDumpsInto(traced_value.get());
 }
 
 TEST(ProcessMemoryDumpTest, MoveAssignment) {
   auto heap_state = MakeRefCounted<HeapProfilerSerializationState>();
-  heap_state->SetStackFrameDeduplicator(
-      std::make_unique<StackFrameDeduplicator>());
-  heap_state->SetTypeNameDeduplicator(std::make_unique<TypeNameDeduplicator>());
+  heap_state->SetStackFrameDeduplicator(MakeUnique<StackFrameDeduplicator>());
+  heap_state->SetTypeNameDeduplicator(MakeUnique<TypeNameDeduplicator>());
 
   ProcessMemoryDump pmd1 = ProcessMemoryDump(heap_state, kDetailedDumpArgs);
   pmd1.CreateAllocatorDump("mad1");
@@ -119,7 +117,7 @@ TEST(ProcessMemoryDumpTest, MoveAssignment) {
   EXPECT_EQ(heap_state.get(), pmd2.heap_profiler_serialization_state().get());
 
   // Check that calling serialization routines doesn't cause a crash.
-  auto traced_value = std::make_unique<TracedValue>();
+  auto traced_value = MakeUnique<TracedValue>();
   pmd2.SerializeAllocatorDumpsInto(traced_value.get());
   pmd2.SerializeHeapProfilerDumpsInto(traced_value.get());
 }
@@ -148,7 +146,7 @@ TEST(ProcessMemoryDumpTest, Clear) {
   ASSERT_EQ(nullptr, pmd1->GetSharedGlobalAllocatorDump(shared_mad_guid2));
 
   // Check that calling serialization routines doesn't cause a crash.
-  auto traced_value = std::make_unique<TracedValue>();
+  auto traced_value = MakeUnique<TracedValue>();
   pmd1->SerializeAllocatorDumpsInto(traced_value.get());
   pmd1->SerializeHeapProfilerDumpsInto(traced_value.get());
 
@@ -547,8 +545,7 @@ TEST(ProcessMemoryDumpTest, CountResidentBytesInSharedMemory) {
   shared_memory1.CreateAndMapAnonymous(size1);
   memset(shared_memory1.memory(), 0, size1);
   base::Optional<size_t> res1 =
-      ProcessMemoryDump::CountResidentBytesInSharedMemory(
-          shared_memory1.memory(), shared_memory1.mapped_size());
+      ProcessMemoryDump::CountResidentBytesInSharedMemory(shared_memory1);
   ASSERT_TRUE(res1.has_value());
   ASSERT_EQ(res1.value(), size1);
   shared_memory1.Unmap();
@@ -560,8 +557,7 @@ TEST(ProcessMemoryDumpTest, CountResidentBytesInSharedMemory) {
   shared_memory2.CreateAndMapAnonymous(kVeryLargeMemorySize);
   memset(shared_memory2.memory(), 0, kVeryLargeMemorySize);
   base::Optional<size_t> res2 =
-      ProcessMemoryDump::CountResidentBytesInSharedMemory(
-          shared_memory2.memory(), shared_memory2.mapped_size());
+      ProcessMemoryDump::CountResidentBytesInSharedMemory(shared_memory2);
   ASSERT_TRUE(res2.has_value());
   ASSERT_EQ(res2.value(), kVeryLargeMemorySize);
   shared_memory2.Unmap();
@@ -573,8 +569,7 @@ TEST(ProcessMemoryDumpTest, CountResidentBytesInSharedMemory) {
   shared_memory3.CreateAndMapAnonymous(kVeryLargeMemorySize);
   memset(shared_memory3.memory(), 0, kTouchedMemorySize);
   base::Optional<size_t> res3 =
-      ProcessMemoryDump::CountResidentBytesInSharedMemory(
-          shared_memory3.memory(), shared_memory3.mapped_size());
+      ProcessMemoryDump::CountResidentBytesInSharedMemory(shared_memory3);
   ASSERT_TRUE(res3.has_value());
   ASSERT_EQ(res3.value(), kTouchedMemorySize);
   shared_memory3.Unmap();

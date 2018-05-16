@@ -59,10 +59,6 @@ class RTCPSender {
  public:
   struct FeedbackState {
     FeedbackState();
-    FeedbackState(const FeedbackState&);
-    FeedbackState(FeedbackState&&);
-
-    ~FeedbackState();
 
     uint32_t packets_sent;
     size_t media_bytes_sent;
@@ -72,7 +68,8 @@ class RTCPSender {
     uint32_t last_rr_ntp_frac;
     uint32_t remote_sr;
 
-    std::vector<rtcp::ReceiveTimeInfo> last_xr_rtis;
+    bool has_last_xr_rr;
+    rtcp::ReceiveTimeInfo last_xr_rr;
 
     // Used when generating TMMBR.
     ModuleRtpRtcpImpl* module;
@@ -149,7 +146,7 @@ class RTCPSender {
   void SetCsrcs(const std::vector<uint32_t>& csrcs);
 
   void SetTargetBitrate(unsigned int target_bitrate);
-  void SetVideoBitrateAllocation(const VideoBitrateAllocation& bitrate);
+  void SetVideoBitrateAllocation(const BitrateAllocation& bitrate);
   bool SendFeedbackPacket(const rtcp::TransportFeedback& packet);
 
   int64_t RtcpAudioReportInverval() const;
@@ -261,7 +258,7 @@ class RTCPSender {
 
   RtcpNackStats nack_stats_ RTC_GUARDED_BY(critical_section_rtcp_sender_);
 
-  rtc::Optional<VideoBitrateAllocation> video_bitrate_allocation_
+  rtc::Optional<BitrateAllocation> video_bitrate_allocation_
       RTC_GUARDED_BY(critical_section_rtcp_sender_);
 
   void SetFlag(uint32_t type, bool is_volatile)

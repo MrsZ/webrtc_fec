@@ -72,9 +72,8 @@ class Subtractor {
   bool DivergedFilter() const { return main_filter_diverged_; }
 
   void DumpFilters() {
-    main_filter_.DumpFilter("aec3_subtractor_H_main", "aec3_subtractor_h_main");
-    shadow_filter_.DumpFilter("aec3_subtractor_H_shadow",
-                              "aec3_subtractor_h_shadow");
+    main_filter_.DumpFilter("aec3_subtractor_H_main");
+    shadow_filter_.DumpFilter("aec3_subtractor_H_shadow");
   }
 
  private:

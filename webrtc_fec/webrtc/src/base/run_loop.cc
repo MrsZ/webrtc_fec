@@ -103,6 +103,9 @@ RunLoop::RunLoop(Type type)
   DCHECK(delegate_) << "A RunLoop::Delegate must be bound to this thread prior "
                        "to using RunLoop.";
   DCHECK(origin_task_runner_);
+
+  DCHECK(IsNestingAllowedOnCurrentThread() ||
+         type_ != Type::kNestableTasksAllowed);
 }
 
 RunLoop::~RunLoop() {
@@ -216,6 +219,7 @@ bool RunLoop::IsNestedOnCurrentThread() {
 void RunLoop::AddNestingObserverOnCurrentThread(NestingObserver* observer) {
   Delegate* delegate = tls_delegate.Get().Get();
   DCHECK(delegate);
+  CHECK(delegate->allow_nesting_);
   delegate->nesting_observers_.AddObserver(observer);
 }
 
@@ -223,7 +227,18 @@ void RunLoop::AddNestingObserverOnCurrentThread(NestingObserver* observer) {
 void RunLoop::RemoveNestingObserverOnCurrentThread(NestingObserver* observer) {
   Delegate* delegate = tls_delegate.Get().Get();
   DCHECK(delegate);
+  CHECK(delegate->allow_nesting_);
   delegate->nesting_observers_.RemoveObserver(observer);
+}
+
+// static
+bool RunLoop::IsNestingAllowedOnCurrentThread() {
+  return tls_delegate.Get().Get()->allow_nesting_;
+}
+
+// static
+void RunLoop::DisallowNestingOnCurrentThread() {
+  tls_delegate.Get().Get()->allow_nesting_ = false;
 }
 
 // static
@@ -286,6 +301,7 @@ bool RunLoop::BeforeRun() {
   const bool is_nested = active_run_loops_.size() > 1;
 
   if (is_nested) {
+    CHECK(delegate_->allow_nesting_);
     for (auto& observer : delegate_->nesting_observers_)
       observer.OnBeginNestedRunLoop();
     if (type_ == Type::kNestableTasksAllowed)

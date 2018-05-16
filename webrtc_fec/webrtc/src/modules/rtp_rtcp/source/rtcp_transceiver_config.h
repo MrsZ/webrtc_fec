@@ -33,7 +33,7 @@ class MediaReceiverRtcpObserver {
                               uint32_t rtp_time) {}
   virtual void OnBye(uint32_t sender_ssrc) {}
   virtual void OnBitrateAllocation(uint32_t sender_ssrc,
-                                   const VideoBitrateAllocation& allocation) {}
+                                   const BitrateAllocation& allocation) {}
 };
 
 struct RtcpTransceiverConfig {
@@ -80,8 +80,6 @@ struct RtcpTransceiverConfig {
   //
   // Tuning parameters.
   //
-  // Initial state if |outgoing_transport| ready to accept packets.
-  bool initial_ready_to_send = true;
   // Delay before 1st periodic compound packet.
   int initial_report_delay_ms = 500;
 

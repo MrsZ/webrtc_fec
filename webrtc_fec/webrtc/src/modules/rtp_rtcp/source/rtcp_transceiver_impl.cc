@@ -86,11 +86,9 @@ class RtcpTransceiverImpl::PacketSender {
 };
 
 RtcpTransceiverImpl::RtcpTransceiverImpl(const RtcpTransceiverConfig& config)
-    : config_(config),
-      ready_to_send_(config.initial_ready_to_send),
-      ptr_factory_(this) {
+    : config_(config), ptr_factory_(this) {
   RTC_CHECK(config_.Validate());
-  if (ready_to_send_ && config_.schedule_periodic_compound_packets)
+  if (config_.schedule_periodic_compound_packets)
     SchedulePeriodicCompoundPackets(config_.initial_report_delay_ms);
 }
 
@@ -117,17 +115,6 @@ void RtcpTransceiverImpl::RemoveMediaReceiverRtcpObserver(
   stored.erase(it);
 }
 
-void RtcpTransceiverImpl::SetReadyToSend(bool ready) {
-  if (config_.schedule_periodic_compound_packets) {
-    if (ready_to_send_ && !ready)  // Stop existent send task.
-      ptr_factory_.InvalidateWeakPtrs();
-
-    if (!ready_to_send_ && ready)  // Restart periodic sending.
-      SchedulePeriodicCompoundPackets(config_.report_period_ms / 2);
-  }
-  ready_to_send_ = ready;
-}
-
 void RtcpTransceiverImpl::ReceivePacket(rtc::ArrayView<const uint8_t> packet,
                                         int64_t now_us) {
   while (!packet.empty()) {
@@ -143,8 +130,6 @@ void RtcpTransceiverImpl::ReceivePacket(rtc::ArrayView<const uint8_t> packet,
 }
 
 void RtcpTransceiverImpl::SendCompoundPacket() {
-  if (!ready_to_send_)
-    return;
   SendPeriodicCompoundPacket();
   ReschedulePeriodicCompoundPackets();
 }
@@ -165,8 +150,6 @@ void RtcpTransceiverImpl::UnsetRemb() {
 }
 
 void RtcpTransceiverImpl::SendRawPacket(rtc::ArrayView<const uint8_t> packet) {
-  if (!ready_to_send_)
-    return;
   // Unlike other senders, this functions just tries to send packet away and
   // disregard rtcp_mode, max_packet_size or anything else.
   // TODO(bugs.webrtc.org/8239): respect config_ by creating the
@@ -177,8 +160,6 @@ void RtcpTransceiverImpl::SendRawPacket(rtc::ArrayView<const uint8_t> packet) {
 void RtcpTransceiverImpl::SendNack(uint32_t ssrc,
                                    std::vector<uint16_t> sequence_numbers) {
   RTC_DCHECK(!sequence_numbers.empty());
-  if (!ready_to_send_)
-    return;
   rtcp::Nack nack;
   nack.SetSenderSsrc(config_.feedback_ssrc);
   nack.SetMediaSsrc(ssrc);
@@ -187,8 +168,6 @@ void RtcpTransceiverImpl::SendNack(uint32_t ssrc,
 }
 
 void RtcpTransceiverImpl::SendPictureLossIndication(uint32_t ssrc) {
-  if (!ready_to_send_)
-    return;
   rtcp::Pli pli;
   pli.SetSenderSsrc(config_.feedback_ssrc);
   pli.SetMediaSsrc(ssrc);
@@ -198,8 +177,6 @@ void RtcpTransceiverImpl::SendPictureLossIndication(uint32_t ssrc) {
 void RtcpTransceiverImpl::SendFullIntraRequest(
     rtc::ArrayView<const uint32_t> ssrcs) {
   RTC_DCHECK(!ssrcs.empty());
-  if (!ready_to_send_)
-    return;
   rtcp::Fir fir;
   fir.SetSenderSsrc(config_.feedback_ssrc);
   for (uint32_t media_ssrc : ssrcs)
@@ -294,8 +271,8 @@ void RtcpTransceiverImpl::HandleTargetBitrate(
       remote_sender_it->second.observers.empty())
     return;
 
-  // Convert rtcp::TargetBitrate to VideoBitrateAllocation.
-  VideoBitrateAllocation bitrate_allocation;
+  // Convert rtcp::TargetBitrate to BitrateAllocation from common types.
+  BitrateAllocation bitrate_allocation;
   for (const rtcp::TargetBitrate::BitrateItem& item :
        target_bitrate.GetTargetBitrates()) {
     if (item.spatial_layer >= kMaxSpatialLayers ||

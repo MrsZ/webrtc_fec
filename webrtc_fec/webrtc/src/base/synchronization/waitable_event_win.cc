@@ -61,8 +61,7 @@ void WaitableEvent::Wait() {
   DWORD result = WaitForSingleObject(handle_.Get(), INFINITE);
   // It is most unexpected that this should ever fail.  Help consumers learn
   // about it if it should ever fail.
-  DPCHECK(result != WAIT_FAILED);
-  DCHECK_EQ(WAIT_OBJECT_0, result);
+  DCHECK_EQ(WAIT_OBJECT_0, result) << "WaitForSingleObject failed";
 }
 
 namespace {

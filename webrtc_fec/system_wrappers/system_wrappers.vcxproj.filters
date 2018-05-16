@@ -59,5 +59,11 @@
     <ClCompile Include="..\webrtc\src\system_wrappers\source\sleep.cc">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\webrtc\src\system_wrappers\source\rw_lock_win.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\webrtc\src\system_wrappers\source\rw_lock.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

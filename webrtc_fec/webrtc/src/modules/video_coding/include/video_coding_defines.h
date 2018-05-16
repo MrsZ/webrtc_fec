@@ -73,10 +73,12 @@ class VCMReceiveCallback {
                                 rtc::Optional<uint8_t> qp,
                                 VideoContentType content_type) = 0;
 
-  virtual int32_t ReceivedDecodedReferenceFrame(const uint64_t pictureId);
+  virtual int32_t ReceivedDecodedReferenceFrame(const uint64_t pictureId) {
+    return -1;
+  }
   // Called when the current receive codec changes.
-  virtual void OnIncomingPayloadType(int payload_type);
-  virtual void OnDecoderImplementationName(const char* implementation_name);
+  virtual void OnIncomingPayloadType(int payload_type) {}
+  virtual void OnDecoderImplementationName(const char* implementation_name) {}
 
  protected:
   virtual ~VCMReceiveCallback() {}

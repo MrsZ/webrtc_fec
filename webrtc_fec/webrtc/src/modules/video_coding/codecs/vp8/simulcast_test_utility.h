@@ -96,6 +96,7 @@ class Vp8TestEncodedImageCallback : public EncodedImageCallback {
                encoded_image._length);
       }
     }
+    picture_id_ = codec_specific_info->codecSpecific.VP8.pictureId;
     layer_sync_[codec_specific_info->codecSpecific.VP8.simulcastIdx] =
         codec_specific_info->codecSpecific.VP8.layerSync;
     temporal_layer_[codec_specific_info->codecSpecific.VP8.simulcastIdx] =
@@ -191,6 +192,7 @@ class TestVp8Simulcast : public ::testing::Test {
                               const int* temporal_layer_profile) {
     RTC_CHECK(settings);
     memset(settings, 0, sizeof(VideoCodec));
+    strncpy(settings->plName, "VP8", 4);
     settings->codecType = kVideoCodecVP8;
     // 96 to 127 dynamic payload types for video codecs
     settings->plType = 120;
@@ -214,6 +216,7 @@ class TestVp8Simulcast : public ::testing::Test {
     ConfigureStream(kDefaultWidth, kDefaultHeight, kMaxBitrates[2],
                     kMinBitrates[2], kTargetBitrates[2],
                     &settings->simulcastStream[2], temporal_layer_profile[2]);
+    settings->VP8()->resilience = kResilientStream;
     settings->VP8()->denoisingOn = true;
     settings->VP8()->automaticResizeOn = false;
     settings->VP8()->frameDroppingOn = true;
@@ -269,7 +272,10 @@ class TestVp8Simulcast : public ::testing::Test {
   }
 
   void SetUpRateAllocator() {
-    rate_allocator_.reset(new SimulcastRateAllocator(settings_));
+    TemporalLayersFactory* tl_factory = new TemporalLayersFactory();
+    rate_allocator_.reset(new SimulcastRateAllocator(
+        settings_, std::unique_ptr<TemporalLayersFactory>(tl_factory)));
+    settings_.VP8()->tl_factory = tl_factory;
   }
 
   void SetRates(uint32_t bitrate_kbps, uint32_t fps) {
@@ -570,7 +576,6 @@ class TestVp8Simulcast : public ::testing::Test {
       settings_.simulcastStream[i].maxBitrate = 0;
       settings_.simulcastStream[i].width = settings_.width;
       settings_.simulcastStream[i].height = settings_.height;
-      settings_.simulcastStream[i].numberOfTemporalLayers = 1;
     }
     // Setting input image to new resolution.
     input_buffer_ = I420Buffer::Create(settings_.width, settings_.height);

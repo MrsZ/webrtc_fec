@@ -14,7 +14,6 @@
 #include <memory>
 #include <string>
 
-#include "modules/audio_processing/agc2/adaptive_agc.h"
 #include "modules/audio_processing/agc2/fixed_gain_controller.h"
 #include "modules/audio_processing/include/audio_processing.h"
 #include "rtc_base/constructormagic.h"
@@ -42,9 +41,8 @@ class GainController2 {
  private:
   static int instance_count_;
   std::unique_ptr<ApmDataDumper> data_dumper_;
-  FixedGainController fixed_gain_controller_;
+  FixedGainController gain_controller_;
   AudioProcessing::Config::GainController2 config_;
-  AdaptiveAgc adaptive_agc_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(GainController2);
 };

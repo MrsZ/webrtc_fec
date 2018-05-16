@@ -6,31 +6,48 @@
 #define BASE_MESSAGE_LOOP_MESSAGE_PUMP_IO_IOS_H_
 
 #include "base/base_export.h"
+#include "base/location.h"
 #include "base/mac/scoped_cffiledescriptorref.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/message_loop/message_pump_mac.h"
-#include "base/message_loop/watchable_io_message_pump_posix.h"
 #include "base/threading/thread_checker.h"
 
 namespace base {
 
 // This file introduces a class to monitor sockets and issue callbacks when
 // sockets are ready for I/O on iOS.
-class BASE_EXPORT MessagePumpIOSForIO : public MessagePumpNSRunLoop,
-                                        public WatchableIOMessagePumpPosix {
+class BASE_EXPORT MessagePumpIOSForIO : public MessagePumpNSRunLoop {
  public:
-  class FdWatchController : public FdWatchControllerInterface {
+  // Used with WatchFileDescriptor to asynchronously monitor the I/O readiness
+  // of a file descriptor.
+  class Watcher {
    public:
-    explicit FdWatchController(const Location& from_here);
+    // Called from MessageLoop::Run when an FD can be read from/written to
+    // without blocking
+    virtual void OnFileCanReadWithoutBlocking(int fd) = 0;
+    virtual void OnFileCanWriteWithoutBlocking(int fd) = 0;
 
-    // Implicitly calls StopWatchingFileDescriptor.
-    ~FdWatchController() override;
+   protected:
+    virtual ~Watcher() {}
+  };
 
-    // FdWatchControllerInterface:
-    bool StopWatchingFileDescriptor() override;
+  // Object returned by WatchFileDescriptor to manage further watching.
+  class FileDescriptorWatcher {
+   public:
+    explicit FileDescriptorWatcher(const Location& from_here);
+    ~FileDescriptorWatcher();  // Implicitly calls StopWatchingFileDescriptor.
+
+    // NOTE: These methods aren't called StartWatching()/StopWatching() to
+    // avoid confusion with the win32 ObjectWatcher class.
+
+    // Stop watching the FD, always safe to call.  No-op if there's nothing
+    // to do.
+    bool StopWatchingFileDescriptor();
+
+    const Location& created_from_location() { return created_from_location_; }
 
    private:
     friend class MessagePumpIOSForIO;
@@ -46,29 +63,48 @@ class BASE_EXPORT MessagePumpIOSForIO : public MessagePumpNSRunLoop,
     void set_pump(base::WeakPtr<MessagePumpIOSForIO> pump) { pump_ = pump; }
     const base::WeakPtr<MessagePumpIOSForIO>& pump() const { return pump_; }
 
-    void set_watcher(FdWatcher* watcher) { watcher_ = watcher; }
+    void set_watcher(Watcher* watcher) { watcher_ = watcher; }
 
     void OnFileCanReadWithoutBlocking(int fd, MessagePumpIOSForIO* pump);
     void OnFileCanWriteWithoutBlocking(int fd, MessagePumpIOSForIO* pump);
 
-    bool is_persistent_ = false;  // false if this event is one-shot.
+    bool is_persistent_;  // false if this event is one-shot.
     base::mac::ScopedCFFileDescriptorRef fdref_;
-    CFOptionFlags callback_types_ = 0;
+    CFOptionFlags callback_types_;
     base::ScopedCFTypeRef<CFRunLoopSourceRef> fd_source_;
     base::WeakPtr<MessagePumpIOSForIO> pump_;
-    FdWatcher* watcher_ = nullptr;
+    Watcher* watcher_;
 
-    DISALLOW_COPY_AND_ASSIGN(FdWatchController);
+    Location created_from_location_;
+
+    DISALLOW_COPY_AND_ASSIGN(FileDescriptorWatcher);
+  };
+
+  enum Mode {
+    WATCH_READ = 1 << 0,
+    WATCH_WRITE = 1 << 1,
+    WATCH_READ_WRITE = WATCH_READ | WATCH_WRITE
   };
 
   MessagePumpIOSForIO();
   ~MessagePumpIOSForIO() override;
 
+  // Have the current thread's message loop watch for a a situation in which
+  // reading/writing to the FD can be performed without blocking.
+  // Callers must provide a preallocated FileDescriptorWatcher object which
+  // can later be used to manage the lifetime of this event.
+  // If a FileDescriptorWatcher is passed in which is already attached to
+  // an event, then the effect is cumulative i.e. after the call |controller|
+  // will watch both the previous event and the new one.
+  // If an error occurs while calling this method in a cumulative fashion, the
+  // event previously attached to |controller| is aborted.
+  // Returns true on success.
+  // Must be called on the same thread the message_pump is running on.
   bool WatchFileDescriptor(int fd,
                            bool persistent,
                            int mode,
-                           FdWatchController* controller,
-                           FdWatcher* delegate);
+                           FileDescriptorWatcher *controller,
+                           Watcher *delegate);
 
   void RemoveRunLoopSource(CFRunLoopSourceRef source);
 

@@ -45,14 +45,6 @@ class RenderBuffer {
     return spectrum_buffer_->buffer[position];
   }
 
-  // Get the spectrum directly from a position in the buffer.
-  rtc::ArrayView<const float> SpectrumFromPosition(int position) const {
-    RTC_CHECK_LT(position, spectrum_buffer_->size);
-    int position_bound = std::min(position, spectrum_buffer_->size - 1);
-    position_bound = std::max(0, position_bound);
-    return spectrum_buffer_->buffer[position_bound];
-  }
-
   // Returns the circular fft buffer.
   rtc::ArrayView<const FftData> GetFftBuffer() const {
     return fft_buffer_->buffer;
@@ -65,9 +57,6 @@ class RenderBuffer {
     return fft_buffer_->read;
   }
 
-  // Returns the write postion in the circular buffer.
-  int GetWritePositionSpectrum() const { return spectrum_buffer_->write; }
-
   // Returns the sum of the spectrums for a certain number of FFTs.
   void SpectralSum(size_t num_spectra,
                    std::array<float, kFftLengthBy2Plus1>* X2) const;
@@ -77,24 +66,6 @@ class RenderBuffer {
 
   // Specifies the recent activity seen in the render signal.
   void SetRenderActivity(bool activity) { render_activity_ = activity; }
-
-  // Returns the headroom between the write and the read positions in the
-  // buffer;
-  int Headroom() const {
-    // The write and read indices are decreased over time.
-    int headroom =
-        fft_buffer_->write < fft_buffer_->read
-            ? fft_buffer_->read - fft_buffer_->write
-            : fft_buffer_->size - fft_buffer_->write + fft_buffer_->read;
-
-    RTC_DCHECK_LE(0, headroom);
-    RTC_DCHECK_GE(fft_buffer_->size, headroom);
-
-    return headroom;
-  }
-
-  // Decrease an index that is used for accessing the buffer.
-  int DecIdx(int idx) const { return spectrum_buffer_->DecIndex(idx); }
 
  private:
   const MatrixBuffer* const block_buffer_;

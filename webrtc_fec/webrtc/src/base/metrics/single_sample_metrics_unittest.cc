@@ -5,7 +5,6 @@
 #include "base/metrics/single_sample_metrics.h"
 
 #include "base/memory/ptr_util.h"
-#include "base/metrics/dummy_histogram.h"
 #include "base/test/gtest_util.h"
 #include "base/test/histogram_tester.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -83,13 +82,11 @@ TEST_F(SingleSampleMetricsTest, DefaultSingleSampleMetricWithValue) {
 
   // Verify construction implicitly by requesting a histogram with the same
   // parameters; this test relies on the fact that histogram objects are unique
-  // per name. Different parameters will result in a Dummy histogram returned.
-  EXPECT_EQ(
-      DummyHistogram::GetInstance(),
+  // per name. Different parameters will result in a nullptr being returned.
+  EXPECT_FALSE(
       Histogram::FactoryGet(kMetricName, 1, 3, 3, HistogramBase::kNoFlags));
-  EXPECT_NE(DummyHistogram::GetInstance(),
-            Histogram::FactoryGet(kMetricName, kMin, kMax, kBucketCount,
-                                  HistogramBase::kUmaTargetedHistogramFlag));
+  EXPECT_TRUE(Histogram::FactoryGet(kMetricName, kMin, kMax, kBucketCount,
+                                    HistogramBase::kUmaTargetedHistogramFlag));
 }
 
 TEST_F(SingleSampleMetricsTest, MultipleMetricsAreDistinct) {

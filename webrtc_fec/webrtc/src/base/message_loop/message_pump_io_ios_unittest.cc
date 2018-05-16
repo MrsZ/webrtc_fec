@@ -17,10 +17,15 @@ namespace base {
 
 class MessagePumpIOSForIOTest : public testing::Test {
  protected:
-  MessagePumpIOSForIOTest() = default;
-  ~MessagePumpIOSForIOTest() override = default;
+  MessagePumpIOSForIOTest()
+      : ui_loop_(MessageLoop::TYPE_UI),
+        io_thread_("MessagePumpIOSForIOTestIOThread") {}
+  ~MessagePumpIOSForIOTest() override {}
 
   void SetUp() override {
+    Thread::Options options(MessageLoop::TYPE_IO, 0);
+    ASSERT_TRUE(io_thread_.StartWithOptions(options));
+    ASSERT_EQ(MessageLoop::TYPE_IO, io_thread_.message_loop()->type());
     int ret = pipe(pipefds_);
     ASSERT_EQ(0, ret);
     ret = pipe(alternate_pipefds_);
@@ -34,7 +39,12 @@ class MessagePumpIOSForIOTest : public testing::Test {
       PLOG(ERROR) << "close";
   }
 
-  void HandleFdIOEvent(MessagePumpForIO::FdWatchController* watcher) {
+  MessageLoop* ui_loop() { return &ui_loop_; }
+  MessageLoopForIO* io_loop() const {
+    return static_cast<MessageLoopForIO*>(io_thread_.message_loop());
+  }
+
+  void HandleFdIOEvent(MessageLoopForIO::FileDescriptorWatcher* watcher) {
     MessagePumpIOSForIO::HandleFdIOEvent(watcher->fdref_.get(),
         kCFFileDescriptorReadCallBack | kCFFileDescriptorWriteCallBack,
         watcher);
@@ -44,42 +54,58 @@ class MessagePumpIOSForIOTest : public testing::Test {
   int alternate_pipefds_[2];
 
  private:
+  MessageLoop ui_loop_;
+  Thread io_thread_;
+
   DISALLOW_COPY_AND_ASSIGN(MessagePumpIOSForIOTest);
 };
 
 namespace {
 
-// Concrete implementation of MessagePumpIOSForIO::FdWatcher that does
+// Concrete implementation of MessagePumpIOSForIO::Watcher that does
 // nothing useful.
-class StupidWatcher : public MessagePumpIOSForIO::FdWatcher {
+class StupidWatcher : public MessagePumpIOSForIO::Watcher {
  public:
   ~StupidWatcher() override {}
 
-  // base:MessagePumpIOSForIO::FdWatcher interface
+  // base:MessagePumpIOSForIO::Watcher interface
   void OnFileCanReadWithoutBlocking(int fd) override {}
   void OnFileCanWriteWithoutBlocking(int fd) override {}
 };
 
-class BaseWatcher : public MessagePumpIOSForIO::FdWatcher {
+// Test to make sure that we catch calling WatchFileDescriptor off of the wrong
+// thread.
+TEST_F(MessagePumpIOSForIOTest, TestWatchingFromBadThread) {
+  MessagePumpIOSForIO::FileDescriptorWatcher watcher(FROM_HERE);
+  StupidWatcher delegate;
+
+  ASSERT_DCHECK_DEATH(
+      io_loop()->WatchFileDescriptor(STDOUT_FILENO, false,
+                                     MessageLoopForIO::WATCH_READ, &watcher,
+                                     &delegate));
+}
+
+class BaseWatcher : public MessagePumpIOSForIO::Watcher {
  public:
-  BaseWatcher(MessagePumpIOSForIO::FdWatchController* controller)
+  BaseWatcher(MessagePumpIOSForIO::FileDescriptorWatcher* controller)
       : controller_(controller) {
     DCHECK(controller_);
   }
   ~BaseWatcher() override {}
 
-  // MessagePumpIOSForIO::FdWatcher interface
+  // MessagePumpIOSForIO::Watcher interface
   void OnFileCanReadWithoutBlocking(int /* fd */) override { NOTREACHED(); }
 
   void OnFileCanWriteWithoutBlocking(int /* fd */) override { NOTREACHED(); }
 
  protected:
-  MessagePumpIOSForIO::FdWatchController* controller_;
+  MessagePumpIOSForIO::FileDescriptorWatcher* controller_;
 };
 
 class DeleteWatcher : public BaseWatcher {
  public:
-  explicit DeleteWatcher(MessagePumpIOSForIO::FdWatchController* controller)
+  explicit DeleteWatcher(
+      MessagePumpIOSForIO::FileDescriptorWatcher* controller)
       : BaseWatcher(controller) {}
 
   ~DeleteWatcher() override { DCHECK(!controller_); }
@@ -93,8 +119,8 @@ class DeleteWatcher : public BaseWatcher {
 
 TEST_F(MessagePumpIOSForIOTest, DeleteWatcher) {
   std::unique_ptr<MessagePumpIOSForIO> pump(new MessagePumpIOSForIO);
-  MessagePumpIOSForIO::FdWatchController* watcher =
-      new MessagePumpIOSForIO::FdWatchController(FROM_HERE);
+  MessagePumpIOSForIO::FileDescriptorWatcher* watcher =
+      new MessagePumpIOSForIO::FileDescriptorWatcher(FROM_HERE);
   DeleteWatcher delegate(watcher);
   pump->WatchFileDescriptor(pipefds_[1],
       false, MessagePumpIOSForIO::WATCH_READ_WRITE, watcher, &delegate);
@@ -105,7 +131,7 @@ TEST_F(MessagePumpIOSForIOTest, DeleteWatcher) {
 
 class StopWatcher : public BaseWatcher {
  public:
-  StopWatcher(MessagePumpIOSForIO::FdWatchController* controller,
+  StopWatcher(MessagePumpIOSForIO::FileDescriptorWatcher* controller,
               MessagePumpIOSForIO* pump,
               int fd_to_start_watching = -1)
       : BaseWatcher(controller),
@@ -129,7 +155,7 @@ class StopWatcher : public BaseWatcher {
 
 TEST_F(MessagePumpIOSForIOTest, StopWatcher) {
   std::unique_ptr<MessagePumpIOSForIO> pump(new MessagePumpIOSForIO);
-  MessagePumpIOSForIO::FdWatchController watcher(FROM_HERE);
+  MessagePumpIOSForIO::FileDescriptorWatcher watcher(FROM_HERE);
   StopWatcher delegate(&watcher, pump.get());
   pump->WatchFileDescriptor(pipefds_[1],
       false, MessagePumpIOSForIO::WATCH_READ_WRITE, &watcher, &delegate);
@@ -140,7 +166,7 @@ TEST_F(MessagePumpIOSForIOTest, StopWatcher) {
 
 TEST_F(MessagePumpIOSForIOTest, StopWatcherAndWatchSomethingElse) {
   std::unique_ptr<MessagePumpIOSForIO> pump(new MessagePumpIOSForIO);
-  MessagePumpIOSForIO::FdWatchController watcher(FROM_HERE);
+  MessagePumpIOSForIO::FileDescriptorWatcher watcher(FROM_HERE);
   StopWatcher delegate(&watcher, pump.get(), alternate_pipefds_[1]);
   pump->WatchFileDescriptor(pipefds_[1],
       false, MessagePumpIOSForIO::WATCH_READ_WRITE, &watcher, &delegate);

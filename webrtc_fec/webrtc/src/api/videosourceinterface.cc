@@ -13,7 +13,6 @@
 namespace rtc {
 
 VideoSinkWants::VideoSinkWants() = default;
-VideoSinkWants::VideoSinkWants(const VideoSinkWants&) = default;
 VideoSinkWants::~VideoSinkWants() = default;
 
 }  // namespace rtc

@@ -81,7 +81,7 @@ class SSLAdapterTestDummyClient : public sigslot::has_slots<> {
   }
 
   int Connect(const std::string& hostname, const rtc::SocketAddress& address) {
-    RTC_LOG(LS_INFO) << "Initiating connection with " << address.ToString();
+    RTC_LOG(LS_INFO) << "Initiating connection with " << address;
 
     int rv = ssl_adapter_->Connect(address);
 
@@ -157,7 +157,7 @@ class SSLAdapterTestDummyServer : public sigslot::has_slots<> {
 
     RTC_LOG(LS_INFO) << ((ssl_mode_ == rtc::SSL_MODE_DTLS) ? "UDP" : "TCP")
                      << " server listening on "
-                     << server_socket_->GetLocalAddress().ToString();
+                     << server_socket_->GetLocalAddress();
   }
 
   rtc::SocketAddress GetAddress() const {

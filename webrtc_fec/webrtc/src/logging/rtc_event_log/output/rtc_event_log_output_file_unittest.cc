@@ -8,13 +8,11 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "logging/rtc_event_log/output/rtc_event_log_output_file.h"
-
 #include <fstream>
 #include <memory>
 #include <string>
 
-#include "rtc_base/checks.h"
+#include "logging/rtc_event_log/output/rtc_event_log_output_file.h"
 #include "rtc_base/ptr_util.h"
 #include "test/gtest.h"
 #include "test/testsupport/fileutils.h"

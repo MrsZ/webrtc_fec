@@ -46,7 +46,7 @@ class VP9EncoderImpl : public VP9Encoder {
 
   int SetChannelParameters(uint32_t packet_loss, int64_t rtt) override;
 
-  int SetRateAllocation(const VideoBitrateAllocation& bitrate_allocation,
+  int SetRateAllocation(const BitrateAllocation& bitrate_allocation,
                         uint32_t frame_rate) override;
 
   const char* ImplementationName() const override;
@@ -74,11 +74,10 @@ class VP9EncoderImpl : public VP9Encoder {
 
   void PopulateCodecSpecific(CodecSpecificInfo* codec_specific,
                              const vpx_codec_cx_pkt& pkt,
-                             uint32_t timestamp,
-                             bool first_frame_in_picture);
+                             uint32_t timestamp);
 
   bool ExplicitlyConfiguredSpatialLayers() const;
-  bool SetSvcRates(const VideoBitrateAllocation& bitrate_allocation);
+  bool SetSvcRates();
 
   // Used for flexible mode to set the flags and buffer references used
   // by the encoder. Also calculates the references used by the RTP
@@ -95,8 +94,6 @@ class VP9EncoderImpl : public VP9Encoder {
   static void EncoderOutputCodedPacketCallback(vpx_codec_cx_pkt* pkt,
                                                void* user_data);
 
-  void DeliverBufferedFrame(bool end_of_superframe);
-
   // Determine maximum target for Intra frames
   //
   // Input:
@@ -106,7 +103,6 @@ class VP9EncoderImpl : public VP9Encoder {
   uint32_t MaxIntraTarget(uint32_t optimal_buffer_size);
 
   EncodedImage encoded_image_;
-  CodecSpecificInfo codec_specific_;
   EncodedImageCallback* encoded_complete_callback_;
   VideoCodec codec_;
   bool inited_;
@@ -131,6 +127,10 @@ class VP9EncoderImpl : public VP9Encoder {
   uint8_t num_ref_pics_[kMaxVp9NumberOfSpatialLayers];
   uint8_t p_diff_[kMaxVp9NumberOfSpatialLayers][kMaxVp9RefPics];
   std::unique_ptr<ScreenshareLayersVP9> spatial_layer_;
+
+  // RTP state.
+  uint16_t picture_id_;
+  uint8_t tl0_pic_idx_;  // Only used in non-flexible mode.
 };
 
 class VP9DecoderImpl : public VP9Decoder {
@@ -164,6 +164,7 @@ class VP9DecoderImpl : public VP9Decoder {
   DecodedImageCallback* decode_complete_callback_;
   bool inited_;
   vpx_codec_ctx_t* decoder_;
+  VideoCodec codec_;
   bool key_frame_required_;
 };
 }  // namespace webrtc
